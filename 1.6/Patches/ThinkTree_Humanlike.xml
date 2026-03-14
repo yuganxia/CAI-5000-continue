@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Patch>
+    <!-- Insert JobGiver_DuckOrRetreat BEFORE the NPC self-tend node so it runs for
+         all threatened ranged NPCs, not just those currently able to self-tend. -->
+    <Operation Class="PatchOperationInsert">
+        <xpath>Defs/ThinkTreeDef[defName="Humanlike"]/thinkRoot/subNodes/li[@Class="ThinkNode_ConditionalNPCCanSelfTendNow"]</xpath>
+        <order>Prepend</order>
+        <value>
+            <li Class="CombatAI.JobGiver_DuckOrRetreat" />
+        </value>
+    </Operation>
+
+</Patch>

@@ -1,0 +1,15 @@
+d:\rim\RimWorld1.5\Mods\CAI-5000-main\Source\Rule56\obj\Debug\CombatAI.RimWorld1_6.csproj.AssemblyReference.cache
+d:\rim\RimWorld1.5\Mods\CAI-5000-main\Source\Rule56\obj\Debug\CombatAI.RimWorld1_6.GeneratedMSBuildEditorConfig.editorconfig
+d:\rim\RimWorld1.5\Mods\CAI-5000-main\Source\Rule56\obj\Debug\CombatAI.RimWorld1_6.csproj.CoreCompileInputs.cache
+d:\rim\RimWorld1.5\Mods\CAI-5000-main\1.6\Assemblies\CombatAI.dll
+d:\rim\RimWorld1.5\Mods\CAI-5000-main\1.6\Assemblies\CombatAI.pdb
+d:\rim\RimWorld1.5\Mods\CAI-5000-main\Source\Rule56\obj\Debug\CombatAI.dll
+d:\rim\RimWorld1.5\Mods\CAI-5000-main\Source\Rule56\obj\Debug\CombatAI.pdb
+d:\rim\RimWorld\Mods\CAI-5000-continue\1.6\Assemblies\CombatAI.dll
+d:\rim\RimWorld\Mods\CAI-5000-continue\1.6\Assemblies\CombatAI.pdb
+d:\rim\RimWorld\Mods\CAI-5000-continue\Source\Rule56\obj\Debug\CombatAI.RimWorld1_6.csproj.AssemblyReference.cache
+d:\rim\RimWorld\Mods\CAI-5000-continue\Source\Rule56\obj\Debug\CombatAI.RimWorld1_6.GeneratedMSBuildEditorConfig.editorconfig
+d:\rim\RimWorld\Mods\CAI-5000-continue\Source\Rule56\obj\Debug\CombatAI.RimWorld1_6.csproj.CoreCompileInputs.cache
+d:\rim\RimWorld\Mods\CAI-5000-continue\Source\Rule56\obj\Debug\CombatAI.RimWorld1_6.sourcelink.json
+d:\rim\RimWorld\Mods\CAI-5000-continue\Source\Rule56\obj\Debug\CombatAI.dll
+d:\rim\RimWorld\Mods\CAI-5000-continue\Source\Rule56\obj\Debug\CombatAI.pdb
