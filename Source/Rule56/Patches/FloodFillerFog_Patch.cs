@@ -10,7 +10,7 @@ namespace CombatAI.Patches
             if (!Finder.Settings.FogOfWar_Enabled) return;
             try
             {
-                map?.GetComp_Fast<MapComponent_FogGrid>()?.ScheduleVanillaUnexploredRebuild();
+                map?.GetComp_Fast<MapComponent_FogGrid>()?.ScheduleOnVanillaFloodUnfog();
             }
             catch { }
         }

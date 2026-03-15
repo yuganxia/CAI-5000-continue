@@ -9,7 +9,7 @@ namespace CombatAI.Patches
     [HarmonyPatch]
     public static class FogGrid_IsFogged_Patch
     {
-        private static FieldInfo mapField;
+        internal static FieldInfo mapField;
 
         [ThreadStatic]
         private static int suppressDeepFogCounter;
@@ -108,6 +108,38 @@ namespace CombatAI.Patches
                 bool deep = false;
                 try { deep = comp.IsFogged(c); } catch { deep = false; }
                 __result = __result || deep;
+            }
+            catch { }
+        }
+    }
+
+    /// <summary>
+    /// Ensures CAI-written fog bits are stripped from the vanilla FogGrid before it saves
+    /// and restored immediately after, so the save file only contains genuine vanilla fog.
+    /// </summary>
+    [HarmonyPatch(typeof(FogGrid), nameof(FogGrid.ExposeData))]
+    public static class FogGrid_ExposeData_Patch
+    {
+        [HarmonyPrefix]
+        public static void Prefix(FogGrid __instance)
+        {
+            if (Scribe.mode != LoadSaveMode.Saving) return;
+            try
+            {
+                Map map = FogGrid_IsFogged_Patch.mapField?.GetValue(__instance) as Map;
+                map?.GetComp_Fast<MapComponent_FogGrid>()?.ClearCAIFogBitsForSave();
+            }
+            catch { }
+        }
+
+        [HarmonyPostfix]
+        public static void Postfix(FogGrid __instance)
+        {
+            if (Scribe.mode != LoadSaveMode.Saving) return;
+            try
+            {
+                Map map = FogGrid_IsFogged_Patch.mapField?.GetValue(__instance) as Map;
+                map?.GetComp_Fast<MapComponent_FogGrid>()?.RestoreCAIFogBitsAfterSave();
             }
             catch { }
         }
