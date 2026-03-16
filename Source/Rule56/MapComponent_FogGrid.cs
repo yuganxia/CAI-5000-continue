@@ -40,6 +40,14 @@ namespace CombatAI
 		public           GlowGrid           glow;
 
 		public  CellFogState[] fogState;
+		/// <summary>
+		/// Persisted version stamp. 0 means the save was created before CellFogState
+		/// existed (legacy save); 1+ means this version. Used to prompt the user to
+		/// rebuild fog on first load of a legacy save.
+		/// </summary>
+		private byte _fogSaveVersion;
+		private const byte FOG_SAVE_VERSION = 1;
+
 		private FieldInfo    _cachedFogGridField;
 		private object       _cachedNativeFog;
 		private MethodInfo   _cachedNativeFogSet;
@@ -125,9 +133,14 @@ namespace CombatAI
 			{
 				if (Scribe.mode == LoadSaveMode.Saving)
 				{
-					// CAI fog bits in the native fogGrid are cleared just before FogGrid.ExposeData()
-					// runs (via FogGrid_ExposeData_Patch.Prefix) and restored afterwards, so the
-					// save file never contains CAI-written bits.  Nothing extra needed here.
+					// Write version stamp so future loads can detect legacy saves.
+					_fogSaveVersion = FOG_SAVE_VERSION;
+					Scribe_Values.Look<byte>(ref _fogSaveVersion, "fogSaveVersion", 0);
+				}
+				if (Scribe.mode == LoadSaveMode.LoadingVars)
+				{
+					// Default is 0 when the key is absent (legacy save).
+					Scribe_Values.Look<byte>(ref _fogSaveVersion, "fogSaveVersion", 0);
 				}
 				if (Scribe.mode == LoadSaveMode.PostLoadInit)
 				{
@@ -138,6 +151,19 @@ namespace CombatAI
 						if (Finder.Settings.FogOfWar_UseVanillaUnexplored)
 						{
 							ApplyVanillaUnexploredOverlay();
+						}
+						// Detected a save created before CellFogState existed — notify the user with a
+						// red negative-event letter so it is prominent and cannot be missed.
+						if (_fogSaveVersion == 0 && Finder.Settings.FogOfWar_Enabled)
+						{
+							LongEventHandler.ExecuteWhenFinished(() =>
+							{
+								Find.LetterStack.ReceiveLetter(
+									"[CAI-5000] Legacy save detected",
+									"[CAI-5000] Legacy save detected: the fog-of-war state may be incorrect. " +
+									"Please open Mod Settings → CAI-5000 → Fog of War and click \"Reinitialize fog from scratch\" to fix it.",
+									LetterDefOf.NegativeEvent);
+							});
 						}
 					}
 					catch (Exception e)
@@ -329,6 +355,55 @@ namespace CombatAI
 						map.mapDrawer.MapMeshDirty(cell, MapMeshFlagDefOf.FogOfWar | MapMeshFlagDefOf.Things);
 				}
 			});
+		}
+
+		public void ReinitializeFogFromScratch()
+		{
+			if (map?.fogGrid == null) return;
+			try
+			{
+				// Mark all cells as VanillaUnexplored and write the raw fog bits
+				for (int i = 0; i < fogState.Length; i++)
+				{
+					fogState[i] = CellFogState.VanillaUnexplored;
+					WriteNativeFogBit(i, true);
+				}
+				// FloodUnfog from every spawned player-owned pawn
+				foreach (var pawn in map.mapPawns.AllPawnsSpawned)
+				{
+					if (pawn.Faction != null && pawn.Faction.IsPlayer)
+						FloodFillerFog.FloodUnfog(pawn.Position, map);
+				}
+				// Re-read the true vanilla state (bypassing the CAI IsFogged patch)
+				Patches.FogGrid_IsFogged_Patch.PushSuppressDeepFogForVanillaChecks();
+				try
+				{
+					InitializeFogStateFromVanilla();
+				}
+				finally
+				{
+					Patches.FogGrid_IsFogged_Patch.PopSuppressDeepFogForVanillaChecks();
+				}
+				if (EffectiveUseVanillaUnexplored)
+				{
+					for (int i = 0; i < fogState.Length; i++)
+					{
+						if (fogState[i] == CellFogState.CAIFogged)
+							WriteNativeFogBit(i, true);
+					}
+				}
+				if (map?.mapDrawer != null)
+				{
+					foreach (var cell in map.AllCells)
+						map.mapDrawer.MapMeshDirty(cell, MapMeshFlagDefOf.FogOfWar | MapMeshFlagDefOf.Things);
+				}
+				RecomputeOnceMainThread();
+				Log.Message($"MapComponent_FogGrid: ReinitializeFogFromScratch completed for map {map}");
+			}
+			catch (Exception e)
+			{
+				Log.Error($"MapComponent_FogGrid: error in ReinitializeFogFromScratch: {e}");
+			}
 		}
 
 		public void ApplyWarFogChangeMainThread(int index)

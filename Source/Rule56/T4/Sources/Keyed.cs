@@ -649,6 +649,28 @@ namespace CombatAI.R
                    _CombatAI_Settings_Basic_FogOfWar_FadeMul_Readouts : _CombatAI_Settings_Basic_FogOfWar_FadeMul_Readouts = "CombatAI.Settings.Basic.FogOfWar.FadeMul.Readouts".Translate();
         }
 
+        private static TaggedString _CombatAI_Settings_Basic_FogOfWar_Reinit_Button = null;
+        /// <summary> Keyed string. key=<c>CombatAI.Settings.Basic.FogOfWar.Reinit.Button</c>. inner text:
+        ///
+        /// <code>Reinitialize fog from scratch (fix legacy saves)</code>
+        /// </summary>       
+        public static TaggedString CombatAI_Settings_Basic_FogOfWar_Reinit_Button
+        {
+            get => _CombatAI_Settings_Basic_FogOfWar_Reinit_Button != null ?
+                   _CombatAI_Settings_Basic_FogOfWar_Reinit_Button : _CombatAI_Settings_Basic_FogOfWar_Reinit_Button = "CombatAI.Settings.Basic.FogOfWar.Reinit.Button".Translate();
+        }
+
+        private static TaggedString _CombatAI_Settings_Basic_FogOfWar_Reinit_Description = null;
+        /// <summary> Keyed string. key=<c>CombatAI.Settings.Basic.FogOfWar.Reinit.Description</c>. inner text:
+        ///
+        /// <code>Resets the entire map to vanilla-unexplored, then FloodUnfoogs from all player pawns. Use this once on saves loaded before CellFogState was introduced.</code>
+        /// </summary>       
+        public static TaggedString CombatAI_Settings_Basic_FogOfWar_Reinit_Description
+        {
+            get => _CombatAI_Settings_Basic_FogOfWar_Reinit_Description != null ?
+                   _CombatAI_Settings_Basic_FogOfWar_Reinit_Description : _CombatAI_Settings_Basic_FogOfWar_Reinit_Description = "CombatAI.Settings.Basic.FogOfWar.Reinit.Description".Translate();
+        }
+
         private static TaggedString _CombatAI_Settings_Basic_KillBoxKiller = null;
         /// <summary> Keyed string. key=<c>CombatAI.Settings.Basic.KillBoxKiller</c>. inner text:
         ///

@@ -346,6 +346,26 @@ namespace CombatAI
                 {
                     Finder.Settings.FogOfWar_RangeFadeMultiplier = HorizontalSlider_NewTemp(rect, Finder.Settings.FogOfWar_RangeFadeMultiplier, 0.0f, 1.0f, false, Keyed.CombatAI_Settings_Basic_FogOfWar_FadeMul_Readouts.Formatted(Finder.Settings.FogOfWar_RangeFadeMultiplier.ToString()), 0.05f);
                 }, useMargins: true);
+
+                if (Current.ProgramState == ProgramState.Playing && Find.CurrentMap != null)
+                {
+                    collapsible.Line(1);
+                    collapsible.Lambda(28, rect =>
+                    {
+                        GUI.color = Color.yellow;
+                        if (Widgets.ButtonText(rect, Keyed.CombatAI_Settings_Basic_FogOfWar_Reinit_Button))
+                        {
+                            var comp = Find.CurrentMap.GetComp_Fast<MapComponent_FogGrid>();
+                            if (comp != null)
+                            {
+                                comp.ReinitializeFogFromScratch();
+                                Messages.Message("CAI: Fog reinitialized from scratch for current map.", MessageTypeDefOf.TaskCompletion);
+                            }
+                        }
+                        GUI.color = Color.white;
+                    }, useMargins: true);
+                    collapsible.Label($"<color=#aaaaaa>{Keyed.CombatAI_Settings_Basic_FogOfWar_Reinit_Description}</color>");
+                }
             }
         }
 
