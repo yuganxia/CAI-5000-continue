@@ -164,6 +164,14 @@ namespace CombatAI.Comps
 			catch {}
 			return false;
 		}
+		private static bool IsEnemyRetreating(Pawn enemy)
+		{
+			if (enemy == null || enemy.Dead || enemy.Downed) return false;
+			if (enemy.CurJobDef?.Is(JobDefOf.Flee) == true) return true;
+			PawnDuty duty = enemy.mindState?.duty;
+			if (duty != null && (duty.Is(DutyDefOf.ExitMapRandom) || duty.Is(DutyDefOf.TravelOrLeave))) return true;
+			return false;
+		}
 
 		public override void Initialize(CompProperties props)
 		{
@@ -489,8 +497,8 @@ namespace CombatAI.Comps
 			rangedEnemiesTargetingSelf.Clear();
 			// Calc the current threat 
 			ThreatUtility.CalculateThreat(selPawn, targetedBy, armor, rangedEnemiesTargetingSelf, null, out float possibleDmg, out float possibleDmgDistance, out float possibleDmgWarmup, out Thing nearestEnemy, out float nearestEnemyDist, out Pawn nearestMeleeEnemy, out float nearestMeleeEnemyDist, ref progress);
-			// Try retreat (skip for AI auto-controlled player pawns - they hold ground)
-			if (!IsAIAutoControlled && (settings?.Retreat_Enabled ?? true) && (bodySize < 2 || selPawn.RaceProps.Humanlike))
+			// Try retreat
+			if ((settings?.Retreat_Enabled ?? true) && (bodySize < 2 || selPawn.RaceProps.Humanlike))
 			{
 				// For debugging and logging.
 				progress = 9;
@@ -718,9 +726,11 @@ namespace CombatAI.Comps
 				rangedEnemiesTargetingSelf.Remove(nearestEnemy);
 			}
 			progress = 500;
-			// When AI auto-control is on, pawns hold ground: suppress both melee-threat and ranged-threat retreats.
-			bool retreatMeleeThreat = !IsAIAutoControlled && nearestMeleeEnemy != null && verb.EffectiveRange * personality.retreat > 16 && nearestMeleeEnemyDist < Maths.Max(verb.EffectiveRange * personality.retreat / 3f, 9) && 0.25f * data.NumAllies < data.NumEnemies;
-			bool retreatThreat      = !IsAIAutoControlled && !retreatMeleeThreat && nearestEnemy != null && nearestEnemyDist < Maths.Max(verb.EffectiveRange * personality.retreat / 4f, 5);
+			// For AI auto-controlled pawns, don't retreat from enemies that are already fleeing/retreating.
+			bool meleeThreatRetreating = IsAIAutoControlled && IsEnemyRetreating(nearestMeleeEnemy);
+			bool rangedThreatRetreating = IsAIAutoControlled && IsEnemyRetreating(nearestEnemy as Pawn);
+			bool retreatMeleeThreat = !meleeThreatRetreating && nearestMeleeEnemy != null && verb.EffectiveRange * personality.retreat > 16 && nearestMeleeEnemyDist < Maths.Max(verb.EffectiveRange * personality.retreat / 3f, 9) && 0.25f * data.NumAllies < data.NumEnemies;
+			bool retreatThreat      = !rangedThreatRetreating && !retreatMeleeThreat && nearestEnemy != null && nearestEnemyDist < Maths.Max(verb.EffectiveRange * personality.retreat / 4f, 5);
 			_bestEnemy = retreatMeleeThreat ? nearestMeleeEnemy : nearestEnemy;
 			// retreat because of a close melee threat
 			if (bodySize < 2.0f && (retreatThreat || retreatMeleeThreat))
@@ -772,14 +782,6 @@ namespace CombatAI.Comps
 			{
 				progress   = 502;
 				_bestEnemy = nearestEnemy;
-				// AI auto-control: if a melee enemy is chasing, redirect all focus to it so flanking allies converge fire
-				if (IsAIAutoControlled && nearestMeleeEnemy != null && verb.CanHitTarget(nearestMeleeEnemy))
-				{
-					nearestEnemy     = nearestMeleeEnemy;
-					nearestEnemyDist = nearestMeleeEnemyDist;
-					_bestEnemy       = nearestMeleeEnemy;
-					bestEnemyVisibleNow = true;
-				}
 				if (!selPawn.RaceProps.Humanlike || bodySize > 2.0f)
 				{
 					progress = 511;
@@ -809,11 +811,6 @@ namespace CombatAI.Comps
 					progress = 522;
 					float distOffset = Mathf.Clamp(2.0f * shootingNum - rangedEnemiesTargetingSelf.Count, 0, 25);
 					float moveBias   = Mathf.Clamp01(2f * shootingNum / (rangedNum + 1f) * personality.group);
-					// AI auto-control: always actively engage — don't wait for allies to be shooting first
-					if (IsAIAutoControlled)
-					{
-						moveBias = 1f;
-					}
 					if (Finder.Settings.Debug_LogJobs && distOffset > 0)
 					{
 						selPawn.Map.debugDrawer.FlashCell(selPos, distOffset / 20f, $"{distOffset}");
@@ -822,7 +819,7 @@ namespace CombatAI.Comps
 					{
 						moveBias = 0f;
 					}
-					if (duty.Is(CombatAI_DutyDefOf.CombatAI_AssaultPoint) && !IsAIAutoControlled && Rand.Chance(1 - moveBias))
+					if (duty.Is(CombatAI_DutyDefOf.CombatAI_AssaultPoint) && Rand.Chance(1 - moveBias))
 					{
 						return;
 					}
@@ -1131,6 +1128,12 @@ namespace CombatAI.Comps
 		private bool TryStartRetreat(float possibleDmg, float possibleDmgWarmup, float possibleDmgDistance, PersonalityTacker.PersonalityResult personality, Pawn nearestMeleeEnemy, float nearestMeleeEnemyDist, ref int progress)
 		{
 			IntVec3 selPos = selPawn.Position;
+			// For AI auto-controlled pawns, strip retreating/fleeing enemies from ranged threat list
+			// so we don't run away from enemies that are already defeated and leaving.
+			if (IsAIAutoControlled && rangedEnemiesTargetingSelf.Count > 0)
+			{
+				rangedEnemiesTargetingSelf.RemoveAll(e => IsEnemyRetreating(e as Pawn));
+			}
 			if (rangedEnemiesTargetingSelf.Count > 0 && nearestMeleeEnemyDist > 2)
 			{
 				float retreatRoll = 15 + Rand.Range(0, 15 * rangedEnemiesTargetingSelf.Count) + data.NumAllies * 15;
