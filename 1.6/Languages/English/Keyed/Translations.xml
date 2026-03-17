@@ -14,6 +14,8 @@
     <CombatAI.Gizmos.AttackMove>Move-Attack</CombatAI.Gizmos.AttackMove>
     <CombatAI.Gizmos.AttackMove.Warning>Warning: Melee pawns cannot use move-attack. Melee pawns skipped.</CombatAI.Gizmos.AttackMove.Warning>
     <CombatAI.Gizmos.AttackMove.Cancel>Cancel Move-Attack</CombatAI.Gizmos.AttackMove.Cancel>
+    <CombatAI.Gizmos.AutoControl>CAI Auto-Control</CombatAI.Gizmos.AutoControl>
+    <CombatAI.Gizmos.AutoControl.Desc>Let Combat AI automatically control this colonist in combat. When drafted, CAI will seek cover, kite enemies, and pursue targets intelligently.</CombatAI.Gizmos.AutoControl.Desc>
     <CombatAI.Quick.Welcome.Description>This quick-setup page will help you quickly setup CAI-5000's different features!</CombatAI.Quick.Welcome.Description>
     <CombatAI.Quick.QuickSetup>Quick Setup Options</CombatAI.Quick.QuickSetup>
     <CombatAI.Quick.Difficulty>Please select a difficulty level</CombatAI.Quick.Difficulty>

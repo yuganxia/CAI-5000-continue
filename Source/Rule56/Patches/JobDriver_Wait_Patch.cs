@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using CombatAI.Comps;
+using HarmonyLib;
 using RimWorld;
 using Verse;
 using Verse.AI;
@@ -14,7 +15,7 @@ namespace CombatAI.Patches
 		{
 			public static void Postfix(JobDriver_Wait __instance)
 			{
-				if (__instance.job.Is(JobDefOf.Wait_Combat) && !__instance.pawn.Faction.IsPlayerSafe())
+				if (__instance.job.Is(JobDefOf.Wait_Combat) && (!__instance.pawn.Faction.IsPlayerSafe() || (__instance.pawn.GetComp<ThingComp_CombatAI>()?.IsAIAutoControlled ?? false)))
 				{
 					if (__instance.job.targetC.IsValid)
 					{
@@ -29,7 +30,7 @@ namespace CombatAI.Patches
 							return false;
 						}
 						Verb verb = __instance.job.verbToUse ?? __instance.pawn.CurrentEffectiveVerb;
-						if (verb == null || verb.WarmingUp || verb.Bursting || __instance.pawn.Faction.IsPlayerSafe())
+						if (verb == null || verb.WarmingUp || verb.Bursting || (__instance.pawn.Faction.IsPlayerSafe() && !(__instance.pawn.GetComp<ThingComp_CombatAI>()?.IsAIAutoControlled ?? false)))
 						{
 							// just skip the fail check if something is not right.
 							return false;

@@ -83,6 +83,10 @@ namespace CombatAI.Comps
 		/// </summary>
 		public LocalTargetInfo forcedTarget = LocalTargetInfo.Invalid;
 		/// <summary>
+		///     Whether CAI should auto-control this player pawn in combat.
+		/// </summary>
+		public bool aiAutoControl = false;
+		/// <summary>
 		///     Sapper timestamp
 		/// </summary>
 		private int sapperStartTick;
@@ -126,6 +130,11 @@ namespace CombatAI.Comps
 		{
 			get => !IsSapping && GenTicks.TicksGame - releasedTick > 900;
 		}
+
+		/// <summary>
+		///     Whether CAI is currently auto-controlling this pawn (only active when drafted).
+		/// </summary>
+		public bool IsAIAutoControlled => aiAutoControl && selPawn.Drafted;
 
 		private static bool IsPerformingMeleeAnimation(Pawn p)
 		{
@@ -397,7 +406,7 @@ namespace CombatAI.Comps
 				return;
 			}
 			// skip for player pawns with no forced target.
-			if (selPawn.Faction.IsPlayerSafe() && !forcedTarget.IsValid)
+			if (selPawn.Faction.IsPlayerSafe() && !forcedTarget.IsValid && !IsAIAutoControlled)
 			{
 				return;
 			}
@@ -480,8 +489,8 @@ namespace CombatAI.Comps
 			rangedEnemiesTargetingSelf.Clear();
 			// Calc the current threat 
 			ThreatUtility.CalculateThreat(selPawn, targetedBy, armor, rangedEnemiesTargetingSelf, null, out float possibleDmg, out float possibleDmgDistance, out float possibleDmgWarmup, out Thing nearestEnemy, out float nearestEnemyDist, out Pawn nearestMeleeEnemy, out float nearestMeleeEnemyDist, ref progress);
-			// Try retreat
-			if ((settings?.Retreat_Enabled ?? true) && (bodySize < 2 || selPawn.RaceProps.Humanlike))
+			// Try retreat (skip for AI auto-controlled player pawns - they hold ground)
+			if (!IsAIAutoControlled && (settings?.Retreat_Enabled ?? true) && (bodySize < 2 || selPawn.RaceProps.Humanlike))
 			{
 				// For debugging and logging.
 				progress = 9;
@@ -709,8 +718,9 @@ namespace CombatAI.Comps
 				rangedEnemiesTargetingSelf.Remove(nearestEnemy);
 			}
 			progress = 500;
-			bool retreatMeleeThreat = nearestMeleeEnemy != null && verb.EffectiveRange * personality.retreat > 16 && nearestMeleeEnemyDist < Maths.Max(verb.EffectiveRange * personality.retreat / 3f, 9) && 0.25f * data.NumAllies < data.NumEnemies;
-			bool retreatThreat      = !retreatMeleeThreat && nearestEnemy != null && nearestEnemyDist < Maths.Max(verb.EffectiveRange * personality.retreat / 4f, 5);
+			// When AI auto-control is on, pawns hold ground: suppress both melee-threat and ranged-threat retreats.
+			bool retreatMeleeThreat = !IsAIAutoControlled && nearestMeleeEnemy != null && verb.EffectiveRange * personality.retreat > 16 && nearestMeleeEnemyDist < Maths.Max(verb.EffectiveRange * personality.retreat / 3f, 9) && 0.25f * data.NumAllies < data.NumEnemies;
+			bool retreatThreat      = !IsAIAutoControlled && !retreatMeleeThreat && nearestEnemy != null && nearestEnemyDist < Maths.Max(verb.EffectiveRange * personality.retreat / 4f, 5);
 			_bestEnemy = retreatMeleeThreat ? nearestMeleeEnemy : nearestEnemy;
 			// retreat because of a close melee threat
 			if (bodySize < 2.0f && (retreatThreat || retreatMeleeThreat))
@@ -762,6 +772,14 @@ namespace CombatAI.Comps
 			{
 				progress   = 502;
 				_bestEnemy = nearestEnemy;
+				// AI auto-control: if a melee enemy is chasing, redirect all focus to it so flanking allies converge fire
+				if (IsAIAutoControlled && nearestMeleeEnemy != null && verb.CanHitTarget(nearestMeleeEnemy))
+				{
+					nearestEnemy     = nearestMeleeEnemy;
+					nearestEnemyDist = nearestMeleeEnemyDist;
+					_bestEnemy       = nearestMeleeEnemy;
+					bestEnemyVisibleNow = true;
+				}
 				if (!selPawn.RaceProps.Humanlike || bodySize > 2.0f)
 				{
 					progress = 511;
@@ -791,6 +809,11 @@ namespace CombatAI.Comps
 					progress = 522;
 					float distOffset = Mathf.Clamp(2.0f * shootingNum - rangedEnemiesTargetingSelf.Count, 0, 25);
 					float moveBias   = Mathf.Clamp01(2f * shootingNum / (rangedNum + 1f) * personality.group);
+					// AI auto-control: always actively engage — don't wait for allies to be shooting first
+					if (IsAIAutoControlled)
+					{
+						moveBias = 1f;
+					}
 					if (Finder.Settings.Debug_LogJobs && distOffset > 0)
 					{
 						selPawn.Map.debugDrawer.FlashCell(selPos, distOffset / 20f, $"{distOffset}");
@@ -799,7 +822,7 @@ namespace CombatAI.Comps
 					{
 						moveBias = 0f;
 					}
-					if (duty.Is(CombatAI_DutyDefOf.CombatAI_AssaultPoint) && Rand.Chance(1 - moveBias))
+					if (duty.Is(CombatAI_DutyDefOf.CombatAI_AssaultPoint) && !IsAIAutoControlled && Rand.Chance(1 - moveBias))
 					{
 						return;
 					}
@@ -922,8 +945,27 @@ namespace CombatAI.Comps
 						{
 							Log.Error($"CoverPositionFinder.TryFindCoverPosition threw exception for {selPawn} progress:{progress} \n{ex}");
 						}
+					} else if (IsAIAutoControlled && nearestEnemy != null &&
+							(sightReader.GetDynamicFriendlyFlags(nearestEnemy.Position) & selFlags) != 0 &&
+							rangedEnemiesTargetingSelf.Count == 0)
+					{
+						progress   = 525;
+						_bestEnemy = nearestEnemy;
+						CastPositionRequest request = new CastPositionRequest();
+						request.caster              = selPawn;
+						request.target              = nearestEnemy;
+						request.maxRangeFromTarget  = verb.EffectiveRange * 0.9f;
+						request.verb                = verb;
+						request.maxRangeFromCaster  = Mathf.Min(nearestEnemyDist, verb.EffectiveRange * personality.cover);
+						request.wantCoverFromTarget = true;
+						if (CastPositionFinder.TryFindCastPosition(request, out IntVec3 cell) && cell != selPos)
+						{
+							_last = 80;
+							StartOrQueueCoverJob(cell, 30);
+						}
 					}
 				}
+				
 			}
 		}
 		
@@ -1498,98 +1540,30 @@ namespace CombatAI.Comps
 				yield return cover;
 				yield return cast;
 			}
-			if (selPawn.IsColonist)
+			if (selPawn.IsColonist && selPawn.Drafted)
 			{
-				Command_Target attackMove = new Command_Target();
-				attackMove.defaultLabel                       = Keyed.CombatAI_Gizmos_AttackMove;
-				attackMove.targetingParams                    = new TargetingParameters();
-				attackMove.targetingParams.canTargetPawns     = true;
-				attackMove.targetingParams.canTargetLocations = true;
-				attackMove.targetingParams.canTargetSelf      = false;
-				attackMove.targetingParams.validator = target =>
+				Command_Toggle autoControlToggle = new Command_Toggle();
+				autoControlToggle.defaultLabel = "CombatAI.Gizmos.AutoControl".Translate();
+				autoControlToggle.defaultDesc  = "CombatAI.Gizmos.AutoControl.Desc".Translate();
+				autoControlToggle.icon         = Tex.Isma_Gizmos_move_attack;
+				autoControlToggle.groupable    = true;
+				autoControlToggle.isActive     = () => aiAutoControl;
+				autoControlToggle.toggleAction = () =>
 				{
-					if (!target.IsValid || !target.Cell.InBounds(selPawn.Map))
-					{
-						return false;
-					}
+					bool newVal = !aiAutoControl;
 					foreach (Pawn pawn in Find.Selector.SelectedPawns)
 					{
-						if (pawn == null)
+						if (pawn.IsColonist)
 						{
-							continue;
-						}
-						if (pawn.CanReach(target.Cell, PathEndMode.OnCell, Danger.Deadly))
-						{
-							return true;
-						}
-					}
-					return false;
-				};
-				attackMove.icon       = Tex.Isma_Gizmos_move_attack;
-				attackMove.groupable  = true;
-				attackMove.shrinkable = false;
-				attackMove.action = target =>
-				{
-					foreach (Pawn pawn in Find.Selector.SelectedPawns)
-					{
-						if (pawn.IsColonist && pawn.drafter != null)
-						{
-							if (!pawn.CanReach(target.Cell, PathEndMode.OnCell, Danger.Deadly))
+							ThingComp_CombatAI comp = pawn.AI();
+							if (comp != null)
 							{
-								continue;
-							}
-							if (!pawn.Drafted)
-							{
-								if (!pawn.drafter.ShowDraftGizmo)
-								{
-									continue;
-								}
-								DevelopmentalStage stage = pawn.DevelopmentalStage;
-								if (stage <= DevelopmentalStage.Child && stage != DevelopmentalStage.None)
-								{
-									continue;
-								}
-								pawn.drafter.Drafted = true;
-							}
-							if (pawn.CurrentEffectiveVerb?.IsMeleeAttack ?? true)
-							{
-								Messages.Message(Keyed.CombatAI_Gizmos_AttackMove_Warning, MessageTypeDefOf.RejectInput, false);
-								continue;
-							}
-							pawn.AI().forcedTarget = target;
-							Job gotoJob = JobMaker.MakeJob(JobDefOf.Goto, target);
-							gotoJob.canUseRangedWeapon = true;
-							gotoJob.locomotionUrgency  = LocomotionUrgency.Jog;
-							gotoJob.playerForced       = true;
-							if (!IsPerformingMeleeAnimation(pawn))
-							{
-								pawn.jobs.ClearQueuedJobs();
-								pawn.jobs.StartJob(gotoJob);
+								comp.aiAutoControl = newVal;
 							}
 						}
 					}
 				};
-				yield return attackMove;
-				if (forcedTarget.IsValid)
-				{
-					Command_Action cancelAttackMove = new Command_Action();
-					cancelAttackMove.defaultLabel = Keyed.CombatAI_Gizmos_AttackMove_Cancel;
-					cancelAttackMove.groupable    = true;
-					//
-					// cancelAttackMove.disabled     = forcedTarget.IsValid;
-					cancelAttackMove.action = () =>
-					{
-						foreach (Pawn pawn in Find.Selector.SelectedPawns)
-						{
-							if (pawn.IsColonist)
-							{
-								pawn.AI().forcedTarget = LocalTargetInfo.Invalid;
-								pawn.jobs.ClearQueuedJobs();
-								pawn.jobs.StopAll();
-							}
-						}
-					};
-				}
+				yield return autoControlToggle;
 			}
 		}
 
@@ -1753,6 +1727,7 @@ namespace CombatAI.Comps
 			Scribe_Deep.Look(ref duties, "duties2");
 			Scribe_Deep.Look(ref abilities, "abilities2");
 			Scribe_TargetInfo.Look(ref forcedTarget, "forcedTarget");
+			Scribe_Values.Look(ref aiAutoControl, "aiAutoControl", false);
 			if (duties == null)
 			{
 				duties = new Pawn_CustomDutyTracker(selPawn);
