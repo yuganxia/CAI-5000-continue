@@ -1545,28 +1545,73 @@ namespace CombatAI.Comps
 			}
 			if (selPawn.IsColonist && selPawn.Drafted)
 			{
-				Command_Toggle autoControlToggle = new Command_Toggle();
-				autoControlToggle.defaultLabel = "CombatAI.Gizmos.AutoControl".Translate();
-				autoControlToggle.defaultDesc  = "CombatAI.Gizmos.AutoControl.Desc".Translate();
-				autoControlToggle.icon         = Tex.Isma_Gizmos_move_attack;
-				autoControlToggle.groupable    = true;
-				autoControlToggle.isActive     = () => aiAutoControl;
-				autoControlToggle.toggleAction = () =>
+				// Only yield this gizmo from the first selected drafted colonist.
+				// GizmoGridDrawer calls toggleAction for every gizmo in the same group,
+				// so yielding from all pawns causes even numbers of pawns to cancel each other out.
+				bool isGroupLeader = true;
+				List<Pawn> selectedPawns = Find.Selector.SelectedPawns;
+				for (int si = 0; si < selectedPawns.Count; si++)
 				{
-					bool newVal = !aiAutoControl;
-					foreach (Pawn pawn in Find.Selector.SelectedPawns)
+					Pawn p = selectedPawns[si];
+					if (p == selPawn) break;
+					if (p.IsColonist && p.Drafted && p.AI() != null)
 					{
-						if (pawn.IsColonist)
+						isGroupLeader = false;
+						break;
+					}
+				}
+				if (isGroupLeader)
+				{
+					Command_Toggle autoControlToggle = new Command_Toggle();
+					autoControlToggle.defaultLabel = "CombatAI.Gizmos.AutoControl".Translate();
+					autoControlToggle.defaultDesc  = "CombatAI.Gizmos.AutoControl.Desc".Translate();
+					autoControlToggle.icon         = Tex.Isma_Gizmos_move_attack;
+					autoControlToggle.groupable    = false;
+					autoControlToggle.isActive = () =>
+					{
+						foreach (Pawn pawn in Find.Selector.SelectedPawns)
 						{
-							ThingComp_CombatAI comp = pawn.AI();
-							if (comp != null)
+							if (pawn.IsColonist && pawn.Drafted)
 							{
-								comp.aiAutoControl = newVal;
+								ThingComp_CombatAI comp = pawn.AI();
+								if (comp != null && comp.aiAutoControl)
+								{
+									return true;
+								}
 							}
 						}
-					}
-				};
-				yield return autoControlToggle;
+						return false;
+					};
+					autoControlToggle.toggleAction = () =>
+					{
+						bool anyEnabled = false;
+						foreach (Pawn pawn in Find.Selector.SelectedPawns)
+						{
+							if (pawn.IsColonist && pawn.Drafted)
+							{
+								ThingComp_CombatAI comp = pawn.AI();
+								if (comp != null && comp.aiAutoControl)
+								{
+									anyEnabled = true;
+									break;
+								}
+							}
+						}
+						bool newVal = !anyEnabled;
+						foreach (Pawn pawn in Find.Selector.SelectedPawns)
+						{
+							if (pawn.IsColonist)
+							{
+								ThingComp_CombatAI comp = pawn.AI();
+								if (comp != null)
+								{
+									comp.aiAutoControl = newVal;
+								}
+							}
+						}
+					};
+					yield return autoControlToggle;
+				}
 			}
 		}
 
