@@ -136,6 +136,28 @@ namespace CombatAI.Comps
 		/// </summary>
 		public bool IsAIAutoControlled => aiAutoControl && selPawn.Drafted;
 
+		/// <summary>
+		///     True when the player has directly commanded this AutoControl pawn
+		///     (e.g., ordered to move or attack), so AI reactions should not interrupt it.
+		///     Detected by comparing the current job's startTick against the last tick
+		///     when our AI itself started a job.
+		/// </summary>
+		private bool IsPlayerOverriding
+		{
+			get
+			{
+				if (!IsAIAutoControlled) return false;
+				Job curJob = selPawn.CurJob;
+				if (curJob == null) return false;
+				if (!curJob.playerForced && !curJob.playerInterruptedForced) return false;
+				// If forcedTarget is active, the AI itself manages forced movement — not a player override.
+				if (forcedTarget.IsValid) return false;
+				// The job started strictly after the last tick our AI started any job.
+				int lastAIJobTick = Math.Max(data.LastInterrupted, data.LastRetreated);
+				return curJob.startTick > lastAIJobTick;
+			}
+		}
+
 		private static bool IsPerformingMeleeAnimation(Pawn p)
 		{
 			try
@@ -170,6 +192,190 @@ namespace CombatAI.Comps
 			if (enemy.CurJobDef?.Is(JobDefOf.Flee) == true) return true;
 			PawnDuty duty = enemy.mindState?.duty;
 			if (duty != null && (duty.Is(DutyDefOf.ExitMapRandom) || duty.Is(DutyDefOf.TravelOrLeave))) return true;
+			return false;
+		}
+
+		/// <summary>
+		///     For AutoControl pawns: pick the best focus-fire target among visible enemies.
+		///     Scoring: thrown/explosive weapon (50%) + low HP% (35%) + targeted by allies (15%).
+		/// </summary>
+		private bool TryGetFocusFireTarget(ulong selFlags, Verb verb, out Thing target)
+		{
+			target = null;
+			if (selPawn.Map == null) return false;
+			float bestScore  = -1f;
+			Thing bestTarget = null;
+			IEnumerator<AIEnvAgentInfo> enumerator = data.Enemies();
+			while (enumerator.MoveNext())
+			{
+				AIEnvAgentInfo info = enumerator.Current;
+				if (info.thing == null || !info.thing.Spawned) continue;
+				if ((sightReader.GetDynamicFriendlyFlags(info.thing.Position) & selFlags) == 0) continue;
+				if (!verb.CanHitTarget(info.thing)) continue;
+				Pawn  ep      = info.thing as Pawn;
+				float hpScore = ep != null ? 1f - ep.health.summaryHealth.SummaryHealthPercent : 0f;
+				// Bonus for enemies using thrown/explosive projectiles (grenades, mortars, etc.)
+				float throwScore = 0f;
+				if (ep != null)
+				{
+					ThingDef proj = ep.CurrentEffectiveVerb?.verbProps?.defaultProjectile;
+					if (proj?.projectile != null && (proj.projectile.flyOverhead || proj.projectile.explosionRadius > 0f))
+					{
+						throwScore = 1f;
+					}
+				}
+				int   allies  = 0;
+				IEnumerator<AIEnvAgentInfo> ae = data.Allies();
+				while (ae.MoveNext())
+				{
+					if (ae.Current.thing is Pawn a && a.mindState?.enemyTarget == info.thing) allies++;
+				}
+				float score = throwScore * 0.5f + hpScore * 0.35f + Mathf.Min(allies * 0.15f, 0.45f) * 0.15f;
+				if (score > bestScore)
+				{
+					bestScore  = score;
+					bestTarget = info.thing;
+				}
+			}
+			if (bestTarget != null) { target = bestTarget; return true; }
+			return false;
+		}
+
+		/// <summary>
+		///     For AutoControl pawns: find a flanking position to support an ally being attacked.
+		///     Returns a cast position 90 degrees to the side of the attacker relative to the ally.
+		/// </summary>
+		private bool TryGetFlankTarget(Verb verb, ulong selFlags, out Thing flankTarget, out IntVec3 flankPos)
+		{
+			flankTarget = null;
+			flankPos    = IntVec3.Invalid;
+			if (selPawn.Map == null) return false;
+			IEnumerator<AIEnvAgentInfo> alliesEnum = data.Allies();
+			while (alliesEnum.MoveNext())
+			{
+				if (!(alliesEnum.Current.thing is Pawn ally)) continue;
+				ThingComp_CombatAI allyComp = ally.AI();
+				if (allyComp == null) continue;
+				List<Thing> attackers = allyComp.data.BeingTargetedBy;
+				if (attackers == null || attackers.Count == 0) continue;
+				for (int i = 0; i < attackers.Count; i++)
+				{
+					Thing attacker = attackers[i];
+					if (attacker == null || !attacker.Spawned || !attacker.HostileTo(selPawn)) continue;
+					if (!verb.CanHitTarget(attacker)) continue;
+					// Perpendicular direction (90° around Y-axis in XZ plane)
+					Vector3 dir  = (attacker.Position - ally.Position).ToVector3().normalized;
+					Vector3 perp = new Vector3(-dir.z, 0f, dir.x);
+					CastPositionRequest req = new CastPositionRequest();
+					req.caster              = selPawn;
+					req.target              = attacker;
+					req.verb                = verb;
+					req.maxRangeFromTarget  = verb.EffectiveRange * 0.9f;
+					req.maxRangeFromCaster  = Mathf.Max(selPawn.DistanceTo_Fast(attacker) * 1.2f, 12f);
+					req.wantCoverFromTarget = true;
+					if (CastPositionFinder.TryFindCastPosition(req, out IntVec3 cell) && cell != selPawn.Position)
+					{
+						flankTarget = attacker;
+						flankPos    = cell;
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
+		/// <summary>
+		///     For AutoControl pawns: detect nearby fire, toxic/blinding gas, and incoming
+		///     overhead/explosive projectiles, then retreat to a safe position.
+		/// </summary>
+		private bool TryEvadeAreaThreats(Verb verb, ref int progress)
+		{
+			if (!IsAIAutoControlled) return false;
+			Map     map    = selPawn.Map;
+			if (map == null) return false;
+			IntVec3 selPos = selPawn.Position;
+			bool    needsEvade   = false;
+			IntVec3 threatCenter = IntVec3.Invalid;
+
+			// 1. Gas at current position
+			if (!needsEvade)
+			{
+				if (selPos.GasDensity(map, GasType.ToxGas) > 30 || selPos.GasDensity(map, GasType.BlindSmoke) > 50)
+				{
+					needsEvade   = true;
+					threatCenter = selPos;
+				}
+			}
+
+			// 2. Fire within 3 cells
+			if (!needsEvade)
+			{
+				List<Thing> fires = map.listerThings.ThingsInGroup(ThingRequestGroup.Fire);
+				for (int fi = 0; fi < fires.Count; fi++)
+				{
+					if (fires[fi].Position.DistanceToSquared(selPos) <= 9f)
+					{
+						needsEvade   = true;
+						threatCenter = fires[fi].Position;
+						break;
+					}
+				}
+			}
+
+			// 3. Incoming overhead/explosive projectile whose landing zone is within danger radius
+			if (!needsEvade)
+			{
+				List<Thing> projectiles = map.listerThings.ThingsInGroup(ThingRequestGroup.Projectile);
+				for (int pi = 0; pi < projectiles.Count; pi++)
+				{
+					if (!(projectiles[pi] is Projectile proj)) continue;
+					// Ignore friendly projectiles
+					if (proj.Launcher?.Faction != null && !proj.Launcher.Faction.HostileTo(selPawn.Faction)) continue;
+					ThingDef pd = proj.def;
+					if (pd?.projectile == null) continue;
+					if (!pd.projectile.flyOverhead && pd.projectile.explosionRadius <= 0f) continue;
+					float dangerRadius = pd.projectile.explosionRadius + 4f;
+					// Use intendedTarget then usedTarget to find the landing zone
+					LocalTargetInfo lti = proj.intendedTarget.IsValid ? proj.intendedTarget : proj.usedTarget;
+					if (!lti.IsValid) continue;
+					IntVec3 lz = lti.HasThing ? lti.Thing.Position : lti.Cell;
+					if (lz.DistanceTo(selPos) < dangerRadius)
+					{
+						needsEvade   = true;
+						threatCenter = lz;
+						break;
+					}
+				}
+			}
+
+			if (!needsEvade) return false;
+			progress = 95;
+			CoverPositionRequest request = new CoverPositionRequest();
+			request.caster             = selPawn;
+			request.verb               = verb;
+			request.target             = threatCenter.IsValid ? (LocalTargetInfo)threatCenter : LocalTargetInfo.Invalid;
+			request.maxRangeFromCaster = 14f;
+			request.checkBlockChance   = false;
+			if (rangedEnemiesTargetingSelf.Count > 0)
+			{
+				request.majorThreats = new List<Thing>(rangedEnemiesTargetingSelf);
+			}
+			if (CoverPositionFinder.TryFindRetreatPosition(request, out IntVec3 safeCell) && safeCell != selPos)
+			{
+				_last = 90;
+				Job job_goto = JobMaker.MakeJob(CombatAI_JobDefOf.CombatAI_Goto_Retreat, safeCell);
+				job_goto.expiryInterval        = -1;
+				job_goto.checkOverrideOnExpire = false;
+				job_goto.playerForced          = forcedTarget.IsValid;
+				job_goto.locomotionUrgency     = Finder.Settings.Enable_Sprinting ? LocomotionUrgency.Sprint : LocomotionUrgency.Jog;
+				if (!IsPerformingMeleeAnimation(selPawn))
+				{
+					selPawn.jobs.ClearQueuedJobs();
+					selPawn.jobs.StartJob(job_goto, JobCondition.InterruptForced);
+					data.LastRetreated = GenTicks.TicksGame;
+				}
+				return true;
+			}
 			return false;
 		}
 
@@ -497,12 +703,23 @@ namespace CombatAI.Comps
 			rangedEnemiesTargetingSelf.Clear();
 			// Calc the current threat 
 			ThreatUtility.CalculateThreat(selPawn, targetedBy, armor, rangedEnemiesTargetingSelf, null, out float possibleDmg, out float possibleDmgDistance, out float possibleDmgWarmup, out Thing nearestEnemy, out float nearestEnemyDist, out Pawn nearestMeleeEnemy, out float nearestMeleeEnemyDist, ref progress);
+			// Respect player commands: if the player directly commanded this pawn (move/attack order),
+			// treat it as highest priority and skip all AI-initiated reactions.
+			if (IsPlayerOverriding)
+			{
+				return;
+			}
 			// Try retreat
 			if ((settings?.Retreat_Enabled ?? true) && (bodySize < 2 || selPawn.RaceProps.Humanlike))
 			{
 				// For debugging and logging.
 				progress = 9;
 				if (TryStartRetreat(possibleDmg, possibleDmgWarmup, possibleDmgDistance, personality, nearestMeleeEnemy, nearestMeleeEnemyDist, ref progress))
+				{
+					return;
+				}
+				// For AutoControl pawns: dodge fire, gas, and incoming thrown/explosive projectiles.
+				if (TryEvadeAreaThreats(verb, ref progress))
 				{
 					return;
 				}
@@ -725,6 +942,13 @@ namespace CombatAI.Comps
 			{
 				rangedEnemiesTargetingSelf.Remove(nearestEnemy);
 			}
+			// For AutoControl pawns: override nearestEnemy with the best focus-fire target.
+			if (IsAIAutoControlled && TryGetFocusFireTarget(selFlags, verb, out Thing focusTarget))
+			{
+				nearestEnemy        = focusTarget;
+				nearestEnemyDist    = selPawn.DistanceTo_Fast(focusTarget);
+				bestEnemyVisibleNow = true;
+			}
 			progress = 500;
 			// For AI auto-controlled pawns, don't retreat from enemies that are already fleeing/retreating.
 			bool meleeThreatRetreating = IsAIAutoControlled && IsEnemyRetreating(nearestMeleeEnemy);
@@ -942,23 +1166,41 @@ namespace CombatAI.Comps
 						{
 							Log.Error($"CoverPositionFinder.TryFindCoverPosition threw exception for {selPawn} progress:{progress} \n{ex}");
 						}
-					} else if (IsAIAutoControlled && nearestEnemy != null &&
-							(sightReader.GetDynamicFriendlyFlags(nearestEnemy.Position) & selFlags) != 0 &&
-							rangedEnemiesTargetingSelf.Count == 0)
+					} else if (IsAIAutoControlled)
 					{
-						progress   = 525;
-						_bestEnemy = nearestEnemy;
-						CastPositionRequest request = new CastPositionRequest();
-						request.caster              = selPawn;
-						request.target              = nearestEnemy;
-						request.maxRangeFromTarget  = verb.EffectiveRange * 0.9f;
-						request.verb                = verb;
-						request.maxRangeFromCaster  = Mathf.Min(nearestEnemyDist, verb.EffectiveRange * personality.cover);
-						request.wantCoverFromTarget = true;
-						if (CastPositionFinder.TryFindCastPosition(request, out IntVec3 cell) && cell != selPos)
+						progress = 525;
+						// Priority 1: flank an enemy that is chasing an ally
+						if (TryGetFlankTarget(verb, selFlags, out Thing flankTarget, out IntVec3 flankCell))
 						{
-							_last = 80;
-							StartOrQueueCoverJob(cell, 30);
+							_bestEnemy = flankTarget;
+							_last      = 81;
+							StartOrQueueCoverJob(flankCell, 40);
+						}
+						// Priority 2: auto-pursue — advance toward the nearest enemy
+						else if (nearestEnemy != null)
+						{
+							_bestEnemy = nearestEnemy;
+							bool enemyRetreating = IsEnemyRetreating(nearestEnemy as Pawn);
+							// Chase if: no one is shooting at us, OR the target is already fleeing
+							if ((rangedEnemiesTargetingSelf.Count == 0 || enemyRetreating) &&
+								(sightReader.GetDynamicFriendlyFlags(nearestEnemy.Position) & selFlags) != 0)
+							{
+								float maxRange = enemyRetreating
+									? Mathf.Min(nearestEnemyDist * 0.8f, verb.EffectiveRange * personality.cover)
+									: Mathf.Min(nearestEnemyDist, verb.EffectiveRange * personality.cover);
+								CastPositionRequest request = new CastPositionRequest();
+								request.caster              = selPawn;
+								request.target              = nearestEnemy;
+								request.maxRangeFromTarget  = verb.EffectiveRange * 0.9f;
+								request.verb                = verb;
+								request.maxRangeFromCaster  = maxRange;
+								request.wantCoverFromTarget = true;
+								if (CastPositionFinder.TryFindCastPosition(request, out IntVec3 cell) && cell != selPos)
+								{
+									_last = 80;
+									StartOrQueueCoverJob(cell, 30);
+								}
+							}
 						}
 					}
 				}
@@ -1133,6 +1375,11 @@ namespace CombatAI.Comps
 			if (IsAIAutoControlled && rangedEnemiesTargetingSelf.Count > 0)
 			{
 				rangedEnemiesTargetingSelf.RemoveAll(e => IsEnemyRetreating(e as Pawn));
+			}
+			// For AutoControl pawns: boost effective damage when critically wounded to trigger retreat sooner.
+			if (IsAIAutoControlled && selPawn.health?.summaryHealth?.SummaryHealthPercent < 0.35f)
+			{
+				possibleDmg *= 1.6f;
 			}
 			if (rangedEnemiesTargetingSelf.Count > 0 && nearestMeleeEnemyDist > 2)
 			{
