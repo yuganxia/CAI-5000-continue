@@ -285,19 +285,21 @@ namespace CombatAI.Comps
 		}
 
 		/// <summary>
-		///     For AutoControl pawns: detect nearby fire, toxic/blinding gas, and incoming
-		///     overhead/explosive projectiles, then retreat to a safe position.
+		///     Detect nearby fire, toxic/blinding gas, and incoming overhead/explosive
+		///     projectiles, then retreat to a safe position.
 		/// </summary>
 		private bool TryEvadeAreaThreats(Verb verb, ref int progress)
 		{
-			if (!IsAIAutoControlled) return false;
+			// Run for AutoControl player pawns; also run for enemy/neutral AI pawns
+			// (i.e. any pawn whose faction is not the player faction).
+			bool isEnemy = selPawn.Faction == null || !selPawn.Faction.IsPlayerSafe();
+			if (!IsAIAutoControlled && !isEnemy) return false;
 			Map     map    = selPawn.Map;
 			if (map == null) return false;
 			IntVec3 selPos = selPawn.Position;
 			bool    needsEvade   = false;
 			IntVec3 threatCenter = IntVec3.Invalid;
 
-			// 1. Gas at current position
 			if (!needsEvade)
 			{
 				if (selPos.GasDensity(map, GasType.ToxGas) > 30 || selPos.GasDensity(map, GasType.BlindSmoke) > 50)
@@ -307,7 +309,6 @@ namespace CombatAI.Comps
 				}
 			}
 
-			// 2. Fire within 3 cells
 			if (!needsEvade)
 			{
 				List<Thing> fires = map.listerThings.ThingsInGroup(ThingRequestGroup.Fire);
@@ -322,7 +323,6 @@ namespace CombatAI.Comps
 				}
 			}
 
-			// 3. Incoming overhead/explosive projectile whose landing zone is within danger radius
 			if (!needsEvade)
 			{
 				List<Thing> projectiles = map.listerThings.ThingsInGroup(ThingRequestGroup.Projectile);
@@ -550,8 +550,6 @@ namespace CombatAI.Comps
 		/// <summary>
 		///     Returns whether the parent has took damage in the last number of ticks.
 		/// </summary>
-		/// <param name="ticks">The number of ticks</param>
-		/// <returns>Whether the pawn took damage in the last number of ticks</returns>
 		public bool TookDamageRecently(int ticks)
 		{
 			return data.TookDamageRecently(ticks);
@@ -559,8 +557,6 @@ namespace CombatAI.Comps
 		/// <summary>
 		///     Returns whether the parent has reacted in the last number of ticks.
 		/// </summary>
-		/// <param name="ticks">The number of ticks</param>
-		/// <returns>Whether the reacted in the last number of ticks</returns>
 		public bool ReactedRecently(int ticks)
 		{
 			return data.InterruptedRecently(ticks);
@@ -718,7 +714,8 @@ namespace CombatAI.Comps
 				{
 					return;
 				}
-				// For AutoControl pawns: dodge fire, gas, and incoming thrown/explosive projectiles.
+				// Dodge fire, gas, and incoming thrown/explosive projectiles
+				// (AutoControl player pawns and all enemy/neutral AI pawns).
 				if (TryEvadeAreaThreats(verb, ref progress))
 				{
 					return;
@@ -862,7 +859,6 @@ namespace CombatAI.Comps
 				Job curJob = selPawn.CurJob;
 				if (curJob != null && curJob.Is(JobDefOf.AttackMelee))
 				{
-					// 避免在执行近战攻击时强制中断，从而打断近战动画。
 					Job job_goto_delayed = JobMaker.MakeJob(CombatAI_JobDefOf.CombatAI_Goto_Cover, cell);
 					job_goto_delayed.playerForced = forcedTarget.IsValid;
 					job_goto_delayed.expiryInterval = -1;

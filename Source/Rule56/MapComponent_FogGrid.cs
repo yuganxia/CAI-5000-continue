@@ -40,11 +40,6 @@ namespace CombatAI
 		public           GlowGrid           glow;
 
 		public  CellFogState[] fogState;
-		/// <summary>
-		/// Persisted version stamp. 0 means the save was created before CellFogState
-		/// existed (legacy save); 1+ means this version. Used to prompt the user to
-		/// rebuild fog on first load of a legacy save.
-		/// </summary>
 		private byte _fogSaveVersion;
 		private const byte FOG_SAVE_VERSION = 1;
 
@@ -103,11 +98,6 @@ namespace CombatAI
 					if (Current.ProgramState != ProgramState.Playing) return false;
 					var ctrl = Find.GravshipController;
 					if (ctrl == null) return false;
-					// Suppress fog during the landing spot selection phase AND during the
-					// landing cutscene/long-event ("PreparingForLanding"). Previously the
-					// condition was ConfirmationInProgress && !CutsceneInProgress, which
-					// lifted fog suppression the moment InitiateLanding set cutsceneInProgress
-					// = true, causing fog to be generated mid-landing and blocking placement.
 					return ctrl.LandingAreaConfirmationInProgress
 						|| WorldComponent_GravshipController.CutsceneInProgress;
 				}
