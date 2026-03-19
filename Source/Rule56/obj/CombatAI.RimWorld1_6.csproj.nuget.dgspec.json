@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\rim\\RimWorld\\Mods\\CAI-5000-continue\\Source\\Rule56\\CombatAI.RimWorld1_6.csproj": {}
+    "d:\\rim\\RimWorld\\Mods\\CAI-5000-continue\\Source\\Rule56\\CombatAI.RimWorld1_6.csproj": {}
   },
   "projects": {
-    "D:\\rim\\RimWorld\\Mods\\CAI-5000-continue\\Source\\Rule56\\CombatAI.RimWorld1_6.csproj": {
+    "d:\\rim\\RimWorld\\Mods\\CAI-5000-continue\\Source\\Rule56\\CombatAI.RimWorld1_6.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\rim\\RimWorld\\Mods\\CAI-5000-continue\\Source\\Rule56\\CombatAI.RimWorld1_6.csproj",
+        "projectUniqueName": "d:\\rim\\RimWorld\\Mods\\CAI-5000-continue\\Source\\Rule56\\CombatAI.RimWorld1_6.csproj",
         "projectName": "CombatAI",
-        "projectPath": "D:\\rim\\RimWorld\\Mods\\CAI-5000-continue\\Source\\Rule56\\CombatAI.RimWorld1_6.csproj",
+        "projectPath": "d:\\rim\\RimWorld\\Mods\\CAI-5000-continue\\Source\\Rule56\\CombatAI.RimWorld1_6.csproj",
         "packagesPath": "C:\\Users\\60129\\.nuget\\packages\\",
-        "outputPath": "D:\\rim\\RimWorld\\Mods\\CAI-5000-continue\\Source\\Rule56\\obj\\",
+        "outputPath": "d:\\rim\\RimWorld\\Mods\\CAI-5000-continue\\Source\\Rule56\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\60129\\AppData\\Roaming\\NuGet\\NuGet.Config",

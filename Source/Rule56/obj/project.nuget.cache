@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "zoMjt/R2ZYA=",
+  "dgSpecHash": "bsWHkxv6jS8=",
   "success": true,
-  "projectFilePath": "D:\\rim\\RimWorld\\Mods\\CAI-5000-continue\\Source\\Rule56\\CombatAI.RimWorld1_6.csproj",
+  "projectFilePath": "d:\\rim\\RimWorld\\Mods\\CAI-5000-continue\\Source\\Rule56\\CombatAI.RimWorld1_6.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\60129\\.nuget\\packages\\lib.harmony\\2.2.2\\lib.harmony.2.2.2.nupkg.sha512",
     "C:\\Users\\60129\\.nuget\\packages\\microsoft.build.framework\\15.1.548\\microsoft.build.framework.15.1.548.nupkg.sha512",

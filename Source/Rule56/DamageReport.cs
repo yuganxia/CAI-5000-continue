@@ -130,7 +130,10 @@ public struct DamageReport
 
 	public void AddVerb(Verb verb)
 	{
-		if (verb != null && verb.Available())
+		bool verbAvailable;
+		try { verbAvailable = verb != null && verb.Available(); }
+		catch { return; }
+		if (verbAvailable)
 		{
 			if (verb.IsEMP()) attributes |= MetaCombatAttribute.Emp;
 			if (!verb.IsMeleeAttack)

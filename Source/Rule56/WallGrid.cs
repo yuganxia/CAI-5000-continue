@@ -143,35 +143,28 @@ namespace CombatAI
         public void RecalculateCell(int index, Thing t)
         {
             IntVec3 cell = cellIndices.IndexToCell(index);
-            // Defensive: if the provided thing is a transient/non-structural overlay
-            // (e.g., fire, filth, mote) which has no fillPercent and is not a Building
-            // nor otherwise impassable, try to find a structural thing at the same
-            // cell to use for fill calculation. If none found, fall back to terrain.
-            if (t != null && t.def.fillPercent <= 0f && !(t is Building) && t.def.Fillage != FillCategory.Full && t.def.passability != Traversability.Impassable)
+            // When t is null OR is a non-structural passable overlay (e.g. conduit,
+            // fire, filth) with no fillPercent, scan the thingGrid for the most
+            // structural thing remaining at this cell and use that instead.
+            // This handles both:
+            //   - callers that pass null after despawning a thing (CoverGrid patch,
+            //     SightTracker, etc.) — we find the wall that's still there.
+            //   - callers that pass a low-fill Building (conduit) directly.
+            if (t == null || (t.def.fillPercent <= 0f && t.def.Fillage != FillCategory.Full && t.def.passability != Traversability.Impassable))
             {
                 try
                 {
                     List<Thing> things = map.thingGrid.ThingsListAt(cell);
-                    Thing candidate = null;
+                    Thing  candidate  = null;
+                    float  bestFill   = -1f;
                     for (int i = 0; i < things.Count; i++)
                     {
                         var tt = things[i];
                         if (tt == null || tt == t) continue;
-                        if (tt is Building) { candidate = tt; break; }
-                        if (tt.def.Fillage == FillCategory.Full) { candidate = tt; break; }
-                        if (tt.def.fillPercent > 0f) { candidate = tt; break; }
-                        if (tt.def.passability == Traversability.Impassable) { candidate = tt; break; }
-                        if (tt is Building_Door) { candidate = tt; break; }
+                        float fill = tt.def.Fillage == FillCategory.Full ? 1f : tt.def.fillPercent;
+                        if (fill > bestFill) { bestFill = fill; candidate = tt; }
                     }
-                    if (candidate != null)
-                    {
-                        t = candidate;
-                    }
-                    else
-                    {
-                        // No structural thing at this cell; treat as no thing so terrain is used.
-                        t = null;
-                    }
+                    t = candidate; // null if nothing structural remains → terrain fallback below
                 }
                 catch (Exception) { t = null; }
             }
@@ -249,6 +242,8 @@ namespace CombatAI
             {
                 if (t != null)
                 {
+                    // Pass null so RecalculateCell scans the grid for the best
+                    // remaining structural thing (e.g. wall under a removed conduit).
                     RecalculateCell(t.Position, null);
                 }
             }

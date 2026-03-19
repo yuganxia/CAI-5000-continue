@@ -102,10 +102,14 @@ namespace CombatAI
 				{
 					if (Current.ProgramState != ProgramState.Playing) return false;
 					var ctrl = Find.GravshipController;
-					return ctrl != null
-						&& ctrl.LandingAreaConfirmationInProgress
-						&& !WorldComponent_GravshipController.CutsceneInProgress
-						&& Current.Game.Gravship != null;
+					if (ctrl == null) return false;
+					// Suppress fog during the landing spot selection phase AND during the
+					// landing cutscene/long-event ("PreparingForLanding"). Previously the
+					// condition was ConfirmationInProgress && !CutsceneInProgress, which
+					// lifted fog suppression the moment InitiateLanding set cutsceneInProgress
+					// = true, causing fog to be generated mid-landing and blocking placement.
+					return ctrl.LandingAreaConfirmationInProgress
+						|| WorldComponent_GravshipController.CutsceneInProgress;
 				}
 				catch { return false; }
 			}

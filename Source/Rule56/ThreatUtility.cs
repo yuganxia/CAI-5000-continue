@@ -77,7 +77,9 @@ namespace CombatAI
 		{
 			if (!TKVCache<Thing, LocalTargetInfo, int>.TryGet(enemy, out int attackTarget, 15) || attackTarget == -1)
 			{
-				Verb enemyVerb = enemy.TryGetAttackVerb();
+				Verb enemyVerb;
+				try { enemyVerb = enemy.TryGetAttackVerb(); }
+				catch { return -1; }
 				if (enemyVerb == null || enemyVerb is Verb_CastPsycast || enemyVerb is Verb_CastAbility)
 				{
 					attackTarget = -1;
