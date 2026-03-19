@@ -34,7 +34,7 @@ namespace CombatAI
         public static void EnqueueFirstCustomDuty(this Pawn pawn, Pawn_CustomDutyTracker.CustomPawnDuty duty)
         {
             ThingComp_CombatAI comp = pawn.AI();
-            if (comp?.duties == null)
+            if (comp?.duties != null)
             {
                 comp.duties.EnqueueFirst(duty);
             }
@@ -44,7 +44,7 @@ namespace CombatAI
         public static void EnqueueCustomDuty(this Pawn pawn, Pawn_CustomDutyTracker.CustomPawnDuty duty)
         {
             ThingComp_CombatAI comp = pawn.AI();
-            if (comp?.duties == null)
+            if (comp?.duties != null)
             {
                 comp.duties.Enqueue(duty);
             }

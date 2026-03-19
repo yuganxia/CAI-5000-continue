@@ -299,6 +299,9 @@ namespace CombatAI.Comps
 			IntVec3 selPos = selPawn.Position;
 			bool    needsEvade   = false;
 			IntVec3 threatCenter = IntVec3.Invalid;
+			// How far the pawn needs to move to escape the threat.
+			// Kept small so the pawn stays in the fight instead of fleeing across the map.
+			float   evadeRadius  = 0f;
 
 			if (!needsEvade)
 			{
@@ -306,6 +309,7 @@ namespace CombatAI.Comps
 				{
 					needsEvade   = true;
 					threatCenter = selPos;
+					evadeRadius  = 6f;  // just clear the gas cloud
 				}
 			}
 
@@ -318,6 +322,7 @@ namespace CombatAI.Comps
 					{
 						needsEvade   = true;
 						threatCenter = fires[fi].Position;
+						evadeRadius  = 5f;  // step out of the fire
 						break;
 					}
 				}
@@ -343,6 +348,7 @@ namespace CombatAI.Comps
 					{
 						needsEvade   = true;
 						threatCenter = lz;
+						evadeRadius  = dangerRadius + 2f;  // clear the blast radius with a small margin
 						break;
 					}
 				}
@@ -354,7 +360,7 @@ namespace CombatAI.Comps
 			request.caster             = selPawn;
 			request.verb               = verb;
 			request.target             = threatCenter.IsValid ? (LocalTargetInfo)threatCenter : LocalTargetInfo.Invalid;
-			request.maxRangeFromCaster = 14f;
+			request.maxRangeFromCaster = Mathf.Clamp(evadeRadius + 2f, 5f, 10f);
 			request.checkBlockChance   = false;
 			if (rangedEnemiesTargetingSelf.Count > 0)
 			{
@@ -409,6 +415,7 @@ namespace CombatAI.Comps
 			duties.pawn    =   selPawn;
 			abilities      ??= new Pawn_AbilityCaster(selPawn);
 			abilities.pawn =   selPawn;
+			data.LastInterrupted = GenTicks.TicksGame;
 		}
 
 #if DEBUG_REACTION
@@ -732,6 +739,9 @@ namespace CombatAI.Comps
 			// offensive actions
 			if (verb != null)
 			{
+				bool isUnarmedAutoControl = IsAIAutoControlled && selPawn.equipment?.Primary == null;
+				if (isUnarmedAutoControl) return;
+
 				// if the pawn is retreating and the pawn is still in danger or recently took damage, skip any offensive reaction.
 				if (verb.IsMeleeAttack)
 				{
@@ -1165,14 +1175,12 @@ namespace CombatAI.Comps
 					} else if (IsAIAutoControlled)
 					{
 						progress = 525;
-						// Priority 1: flank an enemy that is chasing an ally
 						if (TryGetFlankTarget(verb, selFlags, out Thing flankTarget, out IntVec3 flankCell))
 						{
 							_bestEnemy = flankTarget;
 							_last      = 81;
 							StartOrQueueCoverJob(flankCell, 40);
 						}
-						// Priority 2: auto-pursue — advance toward the nearest enemy
 						else if (nearestEnemy != null)
 						{
 							_bestEnemy = nearestEnemy;
