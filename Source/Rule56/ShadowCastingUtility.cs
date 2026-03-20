@@ -125,9 +125,10 @@ namespace CombatAI
         {
             int      cellsScanned = 0;
             WallGrid grid         = request.grid;
-            if (grid == null)
+            if (grid == null || request.map == null || request.setAction == null)
             {
-                Log.Error($"Wall grid not found for {request.map} with cast center {request.source}");
+                if (grid == null)
+                    Log.Error($"Wall grid not found for {request.map} with cast center {request.source}");
                 return;
             }
             List<VisibleRow> rowQueue = new List<VisibleRow>();

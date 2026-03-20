@@ -17,11 +17,15 @@ namespace CombatAI.Patches
         {
             public static bool Prefix(Pawn __instance, Vector3 drawLoc)
             {
-                if (fogOverlay == null && __instance.Spawned)
+                try
                 {
-                    fogOverlay = __instance.Map.GetComp_Fast<MapComponent_FogGrid>() ?? null;
+                    if (fogOverlay == null && __instance.Spawned && __instance.Map != null)
+                    {
+                        fogOverlay = __instance.Map.GetComp_Fast<MapComponent_FogGrid>();
+                    }
+                    return fogOverlay == null || (Finder.Settings.Debug || !fogOverlay.IsFogged(drawLoc.ToIntVec3()));
                 }
-                return fogOverlay == null || (Finder.Settings.Debug || !fogOverlay.IsFogged(drawLoc.ToIntVec3()));
+                catch { return true; }
             }
         }
 

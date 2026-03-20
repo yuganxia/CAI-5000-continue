@@ -877,7 +877,8 @@ namespace CombatAI
 								{
 									// Batch: collect into pre-allocated buffer; flush ONE Action per Update()
 									// instead of one closure per cell - avoids GC bursts / main-thread flooding.
-									_pendingBatch[_pendingBatchCount++] = index;
+									if (_pendingBatchCount < _pendingBatch.Length)
+										_pendingBatch[_pendingBatchCount++] = index;
 								}
 							}
 						}

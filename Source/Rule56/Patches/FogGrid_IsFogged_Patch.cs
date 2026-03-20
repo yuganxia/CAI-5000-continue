@@ -23,6 +23,19 @@ namespace CombatAI.Patches
         [ThreadStatic]
         private static int ignoreVanillaUnexploredOnMapEdgeCounter;
 
+        // When > 0, ALL IsFogged calls return false — overrides both vanilla fog and CAI fog.
+        // Use this for enemy AI operations (siege blueprint placement) that must succeed even in
+        // areas the player has never explored.
+        [ThreadStatic]
+        private static int suppressAllFogCounter;
+
+        // When > 0, suppress only CAI-written (CAIFogged) fog while keeping genuine vanilla
+        // unexplored fog intact.  Used during incident execution so that drop pods / raids can
+        // land in cells the player previously explored but that are currently under CAI war fog,
+        // while still being blocked by cells the player has truly never visited.
+        [ThreadStatic]
+        private static int suppressCAIFogOnlyCounter;
+
         // Tick-level cache for IsGravshipLandingSelectionActive.
         // Find.GravshipController scans WorldComponents and is expensive to call every IsFogged.
         private static volatile bool _gravshipCached;
@@ -31,6 +44,10 @@ namespace CombatAI.Patches
         public static bool SuppressDeepFogForVanillaChecks => suppressDeepFogCounter > 0;
 
         public static bool IgnoreVanillaUnexploredOnMapEdge => ignoreVanillaUnexploredOnMapEdgeCounter > 0;
+
+        public static bool SuppressAllFog => suppressAllFogCounter > 0;
+
+        public static bool SuppressCAIFogOnly => suppressCAIFogOnlyCounter > 0;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Map GetMap(FogGrid fogGrid)
@@ -80,6 +97,32 @@ namespace CombatAI.Patches
             }
         }
 
+        public static void PushSuppressAllFog()
+        {
+            suppressAllFogCounter++;
+        }
+
+        public static void PopSuppressAllFog()
+        {
+            if (suppressAllFogCounter > 0)
+            {
+                suppressAllFogCounter--;
+            }
+        }
+
+        public static void PushSuppressCAIFogOnly()
+        {
+            suppressCAIFogOnlyCounter++;
+        }
+
+        public static void PopSuppressCAIFogOnly()
+        {
+            if (suppressCAIFogOnlyCounter > 0)
+            {
+                suppressCAIFogOnlyCounter--;
+            }
+        }
+
         static FogGrid_IsFogged_Patch()
         {
             var fogGridType = typeof(FogGrid);
@@ -101,9 +144,33 @@ namespace CombatAI.Patches
         {
             try
             {
+                // Full suppress: used by siege blueprint placement so enemies can build in
+                // areas the player has never explored (both vanilla fog and CAI fog ignored).
+                if (SuppressAllFog) { __result = false; return; }
                 if (!Finder.Settings.FogOfWar_Enabled) return;
                 Map map = GetMap(__instance);
                 if (map == null) return;
+                // Suppress only CAI-written fog while keeping genuine vanilla unexplored fog.
+                // When UseVanillaUnexplored is ON, the vanilla FogGrid also contains bits that
+                // CAI wrote for CAIFogged cells. If the cell is CAIFogged (explored but currently
+                // in war fog) we override __result back to false so incidents can land there.
+                // VanillaUnexplored cells are untouched — incidents are still blocked there.
+                if (SuppressCAIFogOnly)
+                {
+                    if (__result
+                        && Finder.Settings.FogOfWar_UseVanillaUnexplored
+                        && !IsGravshipLandingCached()
+                        && !(Finder.Settings.FogOfWar_DisableOnPlayerMap && map.IsPlayerHome))
+                    {
+                        var fogComp = map.GetComp_Fast<MapComponent_FogGrid>();
+                        if (fogComp?.fogState != null && index >= 0 && index < fogComp.fogState.Length
+                            && fogComp.fogState[index] == CellFogState.CAIFogged)
+                        {
+                            __result = false;
+                        }
+                    }
+                    return;
+                }
                 if (IgnoreVanillaUnexploredOnMapEdge)
                 {
                     IntVec3 edgeCell;
@@ -134,9 +201,34 @@ namespace CombatAI.Patches
         {
             try
             {
+                if (SuppressAllFog) { __result = false; return; }
                 if (!Finder.Settings.FogOfWar_Enabled) return;
                 Map map = GetMap(__instance);
                 if (map == null) return;
+                if (SuppressCAIFogOnly)
+                {
+                    if (__result
+                        && Finder.Settings.FogOfWar_UseVanillaUnexplored
+                        && !IsGravshipLandingCached()
+                        && !(Finder.Settings.FogOfWar_DisableOnPlayerMap && map.IsPlayerHome))
+                    {
+                        var fogComp = map.GetComp_Fast<MapComponent_FogGrid>();
+                        if (fogComp?.fogState != null)
+                        {
+                            try
+                            {
+                                int idx = map.cellIndices.CellToIndex(c);
+                                if (idx >= 0 && idx < fogComp.fogState.Length
+                                    && fogComp.fogState[idx] == CellFogState.CAIFogged)
+                                {
+                                    __result = false;
+                                }
+                            }
+                            catch { }
+                        }
+                    }
+                    return;
+                }
                 if (IgnoreVanillaUnexploredOnMapEdge && c.OnEdge(map))
                 {
                     __result = false;
