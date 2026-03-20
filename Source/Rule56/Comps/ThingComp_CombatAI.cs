@@ -1015,9 +1015,30 @@ namespace CombatAI.Comps
 				if (!selPawn.RaceProps.Humanlike || bodySize > 2.0f)
 				{
 					progress = 511;
-					if (bestEnemyVisibleNow && selPawn.mindState.enemyTarget == null)
+					if (bestEnemyVisibleNow)
 					{
-						selPawn.mindState.enemyTarget = nearestEnemy;
+						if (selPawn.mindState.enemyTarget == null)
+						{
+							selPawn.mindState.enemyTarget = nearestEnemy;
+						}
+						// Large non-humanlike mechs (e.g. centipedes) have no cover-finding or shoot-job dispatch in
+						// this branch. Without an explicit Wait_Combat interrupt they keep advancing past their CE-
+						// extended weapon range because the vanilla JobGiver_AIFightEnemies path is effectively broken
+						// by CastPositionPreference_Patch rejecting all candidates when the scoring grid is empty.
+						// Fix: issue Wait_Combat here so the mech stops and fires once an enemy enters range.
+						if (ShouldShootNow())
+						{
+							_last = 52;
+							Job job_waitCombat = JobMaker.MakeJob(JobDefOf.Wait_Combat, Rand.Int % 100 + 100);
+							job_waitCombat.playerForced                   = forcedTarget.IsValid;
+							job_waitCombat.endIfCantShootTargetFromCurPos = true;
+							if (!IsPerformingMeleeAnimation(selPawn))
+							{
+								selPawn.jobs.ClearQueuedJobs();
+								selPawn.jobs.StartJob(job_waitCombat, JobCondition.InterruptForced);
+								data.LastInterrupted = GenTicks.TicksGame;
+							}
+						}
 					}
 				}
 				else
