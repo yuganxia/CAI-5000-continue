@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+
+  <!-- CombatAI_TribalPoleCCTV -->
+  <CombatAI_TribalPoleCCTV.label>Parrot in the cage</CombatAI_TribalPoleCCTV.label>
+  <CombatAI_TribalPoleCCTV.description>A parrot to keep sight of an area. Does not require power, need food to function. Does not function at night.</CombatAI_TribalPoleCCTV.description>
+
+  <!-- CombatAI_IndustrialPoleCCTV -->
+  <CombatAI_IndustrialPoleCCTV.label>Industrial Camera on Pole Mount</CombatAI_IndustrialPoleCCTV.label>
+  <CombatAI_IndustrialPoleCCTV.description>An automated camera keep sight of an area.</CombatAI_IndustrialPoleCCTV.description>
+
+  <!-- CombatAI_SpacerPoleCCTV -->
+  <CombatAI_SpacerPoleCCTV.label>Spacer Camera on Pole Mount</CombatAI_SpacerPoleCCTV.label>
+  <CombatAI_SpacerPoleCCTV.description>An advanced automated camera keep sight of an area. Higher vision range than industrial version and with nightvision optic for night time.</CombatAI_SpacerPoleCCTV.description>
+
+  <!-- CombatAI_CCTVTurretIndustrial -->
+  <CombatAI_CCTVTurretIndustrial.label>Industrial Wall Mounted CCTV</CombatAI_CCTVTurretIndustrial.label>
+  <CombatAI_CCTVTurretIndustrial.description>Wall mounted automated camera. Only provides a conal field of vision, swivels around at fixed speed. Has more vision range than Pole Mount version.</CombatAI_CCTVTurretIndustrial.description>
+
+  <!-- CombatAI_CCTVTurretSpacer -->
+  <CombatAI_CCTVTurretSpacer.label>Spacer Wall Mounted CCTV</CombatAI_CCTVTurretSpacer.label>
+  <CombatAI_CCTVTurretSpacer.description>Wall mounted automated camera. Only provides a conal field of vision, swivels around at fixed speed. Has more vision range than Pole Mount version. Higher vision range than industrial version and with nightvision optic for night time.</CombatAI_CCTVTurretSpacer.description>
+
+  <!-- CombatAI_IndoorCCTV -->
+  <CombatAI_IndoorCCTV.label>Indoor Automated Camera</CombatAI_IndoorCCTV.label>
+  <CombatAI_IndoorCCTV.description>Omnidirectional camera meant to be used indoors. Short range and consumes minimal power. Will never break down like its outdoor counterpart, but will short-circuit in rain.</CombatAI_IndoorCCTV.description>
+
+</LanguageData>

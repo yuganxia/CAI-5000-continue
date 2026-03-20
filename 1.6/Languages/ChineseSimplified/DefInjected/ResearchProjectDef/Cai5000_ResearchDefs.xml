@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+
+  <!-- TribalCCTV -->
+  <TribalCCTV.label>动物警报系统</TribalCCTV.label>
+  <TribalCCTV.description>训练有素的鹦鹉。</TribalCCTV.description>
+
+  <!-- IndustrialCCTV -->
+  <IndustrialCCTV.label>自动摄像系统</IndustrialCCTV.label>
+  <IndustrialCCTV.description>用于监视区域的自动摄像头。</IndustrialCCTV.description>
+
+  <!-- SpacerCCTV -->
+  <SpacerCCTV.label>高级光学传感器</SpacerCCTV.label>
+  <SpacerCCTV.description>新一代自动摄像头，具有增强的光学性能，可实现更广泛的监控覆盖。</SpacerCCTV.description>
+
+</LanguageData>

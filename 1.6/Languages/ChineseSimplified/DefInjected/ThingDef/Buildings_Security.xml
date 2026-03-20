@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+
+  <!-- CombatAI_TribalPoleCCTV -->
+  <CombatAI_TribalPoleCCTV.label>笼中鹦鹉</CombatAI_TribalPoleCCTV.label>
+  <CombatAI_TribalPoleCCTV.description>一只训练有素的鹦鹉，用于监视区域。不需要电力，但需要食物才能工作。夜间无法工作。</CombatAI_TribalPoleCCTV.description>
+
+  <!-- CombatAI_IndustrialPoleCCTV -->
+  <CombatAI_IndustrialPoleCCTV.label>工业高杆摄像头</CombatAI_IndustrialPoleCCTV.label>
+  <CombatAI_IndustrialPoleCCTV.description>自动摄像头，用于监视区域。</CombatAI_IndustrialPoleCCTV.description>
+
+  <!-- CombatAI_SpacerPoleCCTV -->
+  <CombatAI_SpacerPoleCCTV.label>太空高杆摄像头</CombatAI_SpacerPoleCCTV.label>
+  <CombatAI_SpacerPoleCCTV.description>先进的自动摄像头，用于监视区域。视野范围比工业版更广，并配有夜视光学设备，可在夜间使用。</CombatAI_SpacerPoleCCTV.description>
+
+  <!-- CombatAI_CCTVTurretIndustrial -->
+  <CombatAI_CCTVTurretIndustrial.label>工业墙壁摄像头</CombatAI_CCTVTurretIndustrial.label>
+  <CombatAI_CCTVTurretIndustrial.description>墙壁安装的自动摄像头。仅提供锥形视野，以固定速度旋转。视野范围比高杆版本更广。</CombatAI_CCTVTurretIndustrial.description>
+
+  <!-- CombatAI_CCTVTurretSpacer -->
+  <CombatAI_CCTVTurretSpacer.label>太空墙壁摄像头</CombatAI_CCTVTurretSpacer.label>
+  <CombatAI_CCTVTurretSpacer.description>墙壁安装的自动摄像头。仅提供锥形视野，以固定速度旋转。视野范围比高杆版本更广，并配有夜视光学设备，可在夜间使用。</CombatAI_CCTVTurretSpacer.description>
+
+  <!-- CombatAI_IndoorCCTV -->
+  <CombatAI_IndoorCCTV.label>室内自动摄像头</CombatAI_IndoorCCTV.label>
+  <CombatAI_IndoorCCTV.description>用于室内的全向摄像头。距离短，功耗低。不会像室外版本那样损坏，但在雨中会短路。</CombatAI_IndoorCCTV.description>
+
+</LanguageData>

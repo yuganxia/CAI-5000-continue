@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+
+  <!-- TribalCCTV -->
+  <TribalCCTV.label>Animal Warning System</TribalCCTV.label>
+  <TribalCCTV.description>A trained parrot in the nest.</TribalCCTV.description>
+
+  <!-- IndustrialCCTV -->
+  <IndustrialCCTV.label>Automated Camera System</IndustrialCCTV.label>
+  <IndustrialCCTV.description>An automated camera to keep sight of an area.</IndustrialCCTV.description>
+
+  <!-- SpacerCCTV -->
+  <SpacerCCTV.label>Advanced Light Sensor</SpacerCCTV.label>
+  <SpacerCCTV.description>A new generation of automated camera featuring enhanced optics for extended surveillance coverage.</SpacerCCTV.description>
+
+</LanguageData>
