@@ -1,6 +1,6 @@
 is_global = true
 build_property.RootNamespace = CombatAI
-build_property.ProjectDir = d:\rim\RimWorld\Mods\CAI-5000-continue\Source\Rule56\
+build_property.ProjectDir = D:\rim\RimWorld\Mods\CAI-5000-continue\Source\Rule56\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.CsWinRTUseWindowsUIXamlProjections = false

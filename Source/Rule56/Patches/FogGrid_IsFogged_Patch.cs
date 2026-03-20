@@ -1,5 +1,7 @@
 using System;
+using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using HarmonyLib;
 using RimWorld;
 using Verse;
@@ -11,15 +13,46 @@ namespace CombatAI.Patches
     {
         internal static FieldInfo mapField;
 
+        // Compiled field accessor — replaces reflection on the hot path.
+        // Expression.Lambda.Compile() produces IL equivalent to a direct field read.
+        private static Func<FogGrid, Map> _getMap;
+
         [ThreadStatic]
         private static int suppressDeepFogCounter;
 
         [ThreadStatic]
         private static int ignoreVanillaUnexploredOnMapEdgeCounter;
 
+        // Tick-level cache for IsGravshipLandingSelectionActive.
+        // Find.GravshipController scans WorldComponents and is expensive to call every IsFogged.
+        private static volatile bool _gravshipCached;
+        private static volatile int  _gravshipCacheTick = -9999;
+
         public static bool SuppressDeepFogForVanillaChecks => suppressDeepFogCounter > 0;
 
         public static bool IgnoreVanillaUnexploredOnMapEdge => ignoreVanillaUnexploredOnMapEdgeCounter > 0;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Map GetMap(FogGrid fogGrid)
+        {
+            return _getMap != null ? _getMap(fogGrid) : mapField?.GetValue(fogGrid) as Map;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsGravshipLandingCached()
+        {
+            try
+            {
+                int tick = Find.TickManager?.TicksGame ?? 0;
+                if (tick != _gravshipCacheTick)
+                {
+                    _gravshipCached    = MapComponent_FogGrid.IsGravshipLandingSelectionActive;
+                    _gravshipCacheTick = tick;
+                }
+                return _gravshipCached;
+            }
+            catch { return false; }
+        }
 
         public static void PushSuppressDeepFogForVanillaChecks()
         {
@@ -51,6 +84,15 @@ namespace CombatAI.Patches
         {
             var fogGridType = typeof(FogGrid);
             mapField = fogGridType.GetField("map", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            if (mapField != null)
+            {
+                try
+                {
+                    var param = Expression.Parameter(typeof(FogGrid), "fg");
+                    _getMap   = Expression.Lambda<Func<FogGrid, Map>>(Expression.Field(param, mapField), param).Compile();
+                }
+                catch { /* fall back to reflection */ }
+            }
         }
 
         [HarmonyPostfix]
@@ -60,7 +102,7 @@ namespace CombatAI.Patches
             try
             {
                 if (!Finder.Settings.FogOfWar_Enabled) return;
-                Map map = mapField != null ? mapField.GetValue(__instance) as Map : null;
+                Map map = GetMap(__instance);
                 if (map == null) return;
                 if (IgnoreVanillaUnexploredOnMapEdge)
                 {
@@ -75,7 +117,7 @@ namespace CombatAI.Patches
                 // respect the player's-map disable setting to avoid changing vanilla behaviour there
                 if (Finder.Settings.FogOfWar_DisableOnPlayerMap && map.IsPlayerHome) return;
                 if (!Finder.Settings.FogOfWar_UseVanillaUnexplored) return;
-                if (MapComponent_FogGrid.IsGravshipLandingSelectionActive) return;
+                if (IsGravshipLandingCached()) return;
                 if (SuppressDeepFogForVanillaChecks) return;
                 var comp = map.GetComp_Fast<MapComponent_FogGrid>();
                 if (comp == null) return;
@@ -93,7 +135,7 @@ namespace CombatAI.Patches
             try
             {
                 if (!Finder.Settings.FogOfWar_Enabled) return;
-                Map map = mapField != null ? mapField.GetValue(__instance) as Map : null;
+                Map map = GetMap(__instance);
                 if (map == null) return;
                 if (IgnoreVanillaUnexploredOnMapEdge && c.OnEdge(map))
                 {
@@ -101,7 +143,7 @@ namespace CombatAI.Patches
                 }
                 if (Finder.Settings.FogOfWar_DisableOnPlayerMap && map.IsPlayerHome) return;
                 if (!Finder.Settings.FogOfWar_UseVanillaUnexplored) return;
-                if (MapComponent_FogGrid.IsGravshipLandingSelectionActive) return;
+                if (IsGravshipLandingCached()) return;
                 if (SuppressDeepFogForVanillaChecks) return;
                 var comp = map.GetComp_Fast<MapComponent_FogGrid>();
                 if (comp == null) return;

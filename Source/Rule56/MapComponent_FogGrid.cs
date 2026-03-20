@@ -762,6 +762,10 @@ namespace CombatAI
 			public           bool                 dirty = true;
 			public           Rect                 rect;
 			public           float                s_color;
+			// Pre-allocated batch buffer: collects fog-change indices during Update() so we
+			// enqueue ONE main-thread action per section instead of one per changed cell.
+			private readonly int[]               _pendingBatch     = new int[SECTION_SIZE * SECTION_SIZE];
+			private          int                 _pendingBatchCount = 0;
 
 			public ISection(MapComponent_FogGrid comp, Rect rect, Rect mapRect, Mesh mesh, Texture2D tex, Shader shader)
 			{
@@ -865,14 +869,15 @@ namespace CombatAI
 							bool newEffFog = comp.fogState[index] != CellFogState.VanillaExplored;
 							if (prevFog != newEffFog)
 							{
-								int idx = index;
 								if (runOnMainThread)
 								{
-									comp.ApplyWarFogChangeMainThread(idx);
+									comp.ApplyWarFogChangeMainThread(index);
 								}
 								else
 								{
-									comp.asyncActions.EnqueueMainThreadAction(() => comp.ApplyWarFogChangeMainThread(idx));
+									// Batch: collect into pre-allocated buffer; flush ONE Action per Update()
+									// instead of one closure per cell - avoids GC bursts / main-thread flooding.
+									_pendingBatch[_pendingBatchCount++] = index;
 								}
 							}
 						}
@@ -936,6 +941,20 @@ namespace CombatAI
 						float fade = Mathf.Lerp(0.7f, 1.0f, 1f - (float)(GenTicks.TicksGame - tCell.timestamp) / tCell.duration);
 						SetCell(tCell.u, tCell.v, 0.5f * fade * tCell.val, fade * tCell.val, false);
 					}
+				}
+				// Flush the batch: enqueue one main-thread action for all changed cells
+				// instead of the N individual closures that were built up inside SetCell.
+				if (_pendingBatchCount > 0)
+				{
+					int   count = _pendingBatchCount;
+					int[] batch = new int[count];
+					System.Array.Copy(_pendingBatch, batch, count);
+					_pendingBatchCount = 0;
+					comp.asyncActions.EnqueueMainThreadAction(() =>
+					{
+						for (int k = 0; k < batch.Length; k++)
+							comp.ApplyWarFogChangeMainThread(batch[k]);
+					});
 				}
 				dirty = changed;
 			}
