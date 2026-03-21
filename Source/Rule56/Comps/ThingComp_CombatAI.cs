@@ -158,6 +158,54 @@ namespace CombatAI.Comps
 			}
 		}
 
+		private bool IsMechanoidDestValid(IntVec3 cell)
+		{
+			if (!IsAIAutoControlled || !selPawn.RaceProps.IsMechanoid) return true;
+			// If the mech is already outside range, allow any dest; TryIssueMechanoidReturnToRange handles homing.
+			if (!MechanitorUtility.InMechanitorCommandRange(selPawn, new LocalTargetInfo(selPawn.Position))) return true;
+			// Mech is inside range: destination must also be inside range
+			return MechanitorUtility.InMechanitorCommandRange(selPawn, new LocalTargetInfo(cell));
+		}
+
+		private bool TryIssueMechanoidReturnToRange()
+		{
+			if (!IsAIAutoControlled || !selPawn.RaceProps.IsMechanoid) return false;
+			if (MechanitorUtility.InMechanitorCommandRange(selPawn, new LocalTargetInfo(selPawn.Position))) return false;
+			// Find the overseer to use as a homing direction.
+			Pawn overseer = selPawn.GetOverseer();
+			if (overseer == null || !overseer.Spawned || overseer.MapHeld != selPawn.MapHeld) return false;
+			IntVec3 mechPos     = selPawn.Position;
+			IntVec3 overseerPos = overseer.Position;
+			Vector3 dir         = (overseerPos - mechPos).ToVector3().normalized;
+			IntVec3 dest = overseerPos;
+			for (int step = 1; step <= 60; step++)
+			{
+				IntVec3 candidate = (mechPos.ToVector3() + dir * step).ToIntVec3();
+				if (!candidate.InBounds(selPawn.Map)) break;
+				if (MechanitorUtility.InMechanitorCommandRange(selPawn, new LocalTargetInfo(candidate)))
+				{
+					dest = candidate;
+					break;
+				}
+			}
+			// Already heading to a cell that is inside range — no need to reissue.
+			if (selPawn.CurJobDef.Is(JobDefOf.Goto) && selPawn.pather != null
+				&& MechanitorUtility.InMechanitorCommandRange(selPawn, new LocalTargetInfo(selPawn.pather.Destination.Cell)))
+			{
+				return true;
+			}
+			if (!IsPerformingMeleeAnimation(selPawn))
+			{
+				selPawn.jobs.ClearQueuedJobs();
+				Job returnJob = JobMaker.MakeJob(JobDefOf.Goto, dest);
+				returnJob.locomotionUrgency     = LocomotionUrgency.Jog;
+				returnJob.checkOverrideOnExpire = false;
+				selPawn.jobs.StartJob(returnJob, JobCondition.InterruptForced);
+				data.LastInterrupted = GenTicks.TicksGame;
+			}
+			return true;
+		}
+
 		private static bool IsPerformingMeleeAnimation(Pawn p)
 		{
 			try
@@ -285,6 +333,46 @@ namespace CombatAI.Comps
 		}
 
 		/// <summary>
+		///     Computes a lateral preferred position so attacking pawns spread out instead of
+		///     clustering in the same approach corridor. Used as preferredCastPosition hint.
+		///     Returns null if no spreading is needed (fewer than 2 allies are crowded on one side).
+		/// </summary>
+		private IntVec3? GetLateralSpreadPos(Thing target)
+		{
+			if (target == null || selPawn.Map == null) return null;
+			IntVec3 selfPos   = selPawn.Position;
+			IntVec3 targetPos = target.Position;
+			// Approach direction: target → self, in XZ plane
+			float dx  = selfPos.x - targetPos.x;
+			float dz  = selfPos.z - targetPos.z;
+			float len = Mathf.Sqrt(dx * dx + dz * dz);
+			if (len < 2f) return null;
+			// Perpendicular unit vector (90° CW in XZ plane)
+			float perpX = -dz / len;
+			float perpZ =  dx / len;
+			// Count allies on each perpendicular side of our approach line
+			int leftCount = 0, rightCount = 0;
+			IEnumerator<AIEnvAgentInfo> allies = data.Allies();
+			while (allies.MoveNext())
+			{
+				Thing ally = allies.Current.thing;
+				if (ally == null || !ally.Spawned || ally == selPawn) continue;
+				float side = (ally.Position.x - selfPos.x) * perpX + (ally.Position.z - selfPos.z) * perpZ;
+				if (side >  1.5f) rightCount++;
+				else if (side < -1.5f) leftCount++;
+			}
+			if (leftCount + rightCount < 2) return null;
+			// Spread toward the less-crowded side
+			float sign  = leftCount <= rightCount ? -1f : 1f;
+			float dist  = Mathf.Clamp((leftCount + rightCount) * 2.5f, 5f, 14f);
+			IntVec3 spread = new IntVec3(
+				selfPos.x + Mathf.RoundToInt(perpX * sign * dist),
+				selfPos.y,
+				selfPos.z + Mathf.RoundToInt(perpZ * sign * dist));
+			return spread.InBounds(selPawn.Map) ? spread : (IntVec3?)null;
+		}
+
+		/// <summary>
 		///     Detect nearby fire, toxic/blinding gas, and incoming overhead/explosive
 		///     projectiles, then retreat to a safe position.
 		/// </summary>
@@ -366,7 +454,8 @@ namespace CombatAI.Comps
 			{
 				request.majorThreats = new List<Thing>(rangedEnemiesTargetingSelf);
 			}
-			if (CoverPositionFinder.TryFindRetreatPosition(request, out IntVec3 safeCell) && safeCell != selPos)
+			if (CoverPositionFinder.TryFindRetreatPosition(request, out IntVec3 safeCell) && safeCell != selPos
+				&& IsMechanoidDestValid(safeCell))
 			{
 				_last = 90;
 				Job job_goto = JobMaker.MakeJob(CombatAI_JobDefOf.CombatAI_Goto_Retreat, safeCell);
@@ -482,6 +571,9 @@ namespace CombatAI.Comps
 			{
 				duties.TickRare();
 			}
+			// Periodically return out-of-range CAI-controlled friendly mechanoids to their
+			// mechanitor's command zone (handles the no-enemies-in-sight case).
+			TryIssueMechanoidReturnToRange();
 			if (abilities != null)
 			{
 				// abilities.TickRare(visibleEnemies);
@@ -632,6 +724,9 @@ namespace CombatAI.Comps
 			{
 				return;
 			}
+			// If this is a CAI-auto-controlled friendly mechanoid outside its mechanitor's command
+			// range, force it to head home and skip all combat reactions this tick.
+			if (TryIssueMechanoidReturnToRange()) return;
 			ReactDebug_Internel(out progress);
 			// For debugging and logging.
 			progress = 3;
@@ -866,6 +961,8 @@ namespace CombatAI.Comps
 			progress = 400;
 			void StartOrQueueCoverJob(IntVec3 cell, int codeOffset)
 			{
+				// Don't move CAI-controlled friendly mechanoids outside their mechanitor's command range
+				if (!IsMechanoidDestValid(cell)) return;
 				Job curJob = selPawn.CurJob;
 				if (curJob != null && curJob.Is(JobDefOf.AttackMelee))
 				{
@@ -944,6 +1041,55 @@ namespace CombatAI.Comps
 				data.LastInterrupted = GenTicks.TicksGame;
 			}
 
+			void StartWaitCombatJob(int lastCode)
+			{
+				_last = lastCode;
+				Job job_waitCombat = JobMaker.MakeJob(JobDefOf.Wait_Combat, Rand.Int % 100 + 100);
+				job_waitCombat.playerForced                   = forcedTarget.IsValid;
+				job_waitCombat.endIfCantShootTargetFromCurPos = true;
+				if (!IsPerformingMeleeAnimation(selPawn))
+				{
+					selPawn.jobs.ClearQueuedJobs();
+					selPawn.jobs.StartJob(job_waitCombat, JobCondition.InterruptForced);
+					data.LastInterrupted = GenTicks.TicksGame;
+				}
+			}
+
+			void TryFlankOrChase()
+			{
+				if (TryGetFlankTarget(verb, selFlags, out Thing flankTarget, out IntVec3 flankCell))
+				{
+					_bestEnemy = flankTarget;
+					_last      = 81;
+					StartOrQueueCoverJob(flankCell, 40);
+				}
+				else if (nearestEnemy != null)
+				{
+					_bestEnemy = nearestEnemy;
+					bool enemyRetreating = IsEnemyRetreating(nearestEnemy as Pawn);
+					// Chase if: no one is shooting at us, OR the target is already fleeing
+					if ((rangedEnemiesTargetingSelf.Count == 0 || enemyRetreating) &&
+						(sightReader.GetDynamicFriendlyFlags(nearestEnemy.Position) & selFlags) != 0)
+					{
+						float maxRange = enemyRetreating
+							? Mathf.Min(nearestEnemyDist * 0.8f, verb.EffectiveRange * personality.cover)
+							: Mathf.Min(nearestEnemyDist, verb.EffectiveRange * personality.cover);
+						CastPositionRequest request = new CastPositionRequest();
+						request.caster              = selPawn;
+						request.target              = nearestEnemy;
+						request.maxRangeFromTarget  = verb.EffectiveRange * 0.9f;
+						request.verb                = verb;
+						request.maxRangeFromCaster  = maxRange;
+						request.wantCoverFromTarget = true;
+						if (CastPositionFinder.TryFindCastPosition(request, out IntVec3 cell) && cell != selPos)
+						{
+							_last = 80;
+							StartOrQueueCoverJob(cell, 30);
+						}
+					}
+				}
+			}
+
 			if (nearestEnemy != null && rangedEnemiesTargetingSelf.Contains(nearestEnemy))
 			{
 				rangedEnemiesTargetingSelf.Remove(nearestEnemy);
@@ -990,7 +1136,7 @@ namespace CombatAI.Comps
 				}
 				if (found)
 				{
-					if (cell != selPos)
+					if (cell != selPos && IsMechanoidDestValid(cell))
 					{
 						_last = 41;
 						Job job_goto = JobMaker.MakeJob(CombatAI_JobDefOf.CombatAI_Goto_Retreat, cell);
@@ -1021,24 +1167,59 @@ namespace CombatAI.Comps
 						{
 							selPawn.mindState.enemyTarget = nearestEnemy;
 						}
-						// Large non-humanlike mechs (e.g. centipedes) have no cover-finding or shoot-job dispatch in
-						// this branch. Without an explicit Wait_Combat interrupt they keep advancing past their CE-
-						// extended weapon range because the vanilla JobGiver_AIFightEnemies path is effectively broken
-						// by CastPositionPreference_Patch rejecting all candidates when the scoring grid is empty.
-						// Fix: issue Wait_Combat here so the mech stops and fires once an enemy enters range.
-						if (ShouldShootNow())
+						// Try to find an optimal cast/cover position before shooting.
+						if (nearestEnemyDist > 6 * personality.cover)
 						{
-							_last = 52;
-							Job job_waitCombat = JobMaker.MakeJob(JobDefOf.Wait_Combat, Rand.Int % 100 + 100);
-							job_waitCombat.playerForced                   = forcedTarget.IsValid;
-							job_waitCombat.endIfCantShootTargetFromCurPos = true;
-							if (!IsPerformingMeleeAnimation(selPawn))
+							CastPositionRequest request = new CastPositionRequest();
+							request.caster                = selPawn;
+							request.target                = nearestEnemy;
+							request.maxRangeFromTarget    = 9999;
+							request.verb                  = verb;
+							request.maxRangeFromCaster    = (Maths.Max(Maths.Min(verb.EffectiveRange, nearestEnemyDist) / 2f, 10f) * personality.cover) * Finder.P50;
+							request.wantCoverFromTarget   = true;
+							request.preferredCastPosition = !IsAIAutoControlled ? GetLateralSpreadPos(nearestEnemy) : null;
+							if (CastPositionFinder.TryFindCastPosition(request, out IntVec3 castCell) && castCell != selPos && ShouldMoveTo(castCell))
 							{
-								selPawn.jobs.ClearQueuedJobs();
-								selPawn.jobs.StartJob(job_waitCombat, JobCondition.InterruptForced);
-								data.LastInterrupted = GenTicks.TicksGame;
+								StartOrQueueCoverJob(castCell, 0);
+							}
+							else if (ShouldShootNow())
+							{
+								StartWaitCombatJob(52);
 							}
 						}
+						// Fallback: mech is already close enough, just shoot.
+						else if (ShouldShootNow())
+						{
+							StartWaitCombatJob(52);
+						}
+					}
+					// Find cover while the enemy approaches but isn't yet in sight.
+					else if (bestEnemyVisibleSoon)
+					{
+						progress = 512;
+						CoverPositionRequest request = new CoverPositionRequest();
+						request.caster             = selPawn;
+						request.verb               = verb;
+						request.target             = nearestEnemy;
+						request.maxRangeFromCaster = Maths.Min(verb.EffectiveRange, 10f) * personality.cover;
+						request.checkBlockChance   = true;
+						try
+						{
+							if (CoverPositionFinder.TryFindCoverPosition(request, out IntVec3 cell) && ShouldMoveTo(cell))
+							{
+								StartOrQueueCoverJob(cell, 10);
+							}
+						}
+						catch (System.ArgumentOutOfRangeException ex)
+						{
+							Log.Error($"CoverPositionFinder.TryFindCoverPosition threw IndexOutOfRange for {selPawn} progress:{progress} \n{ex}");
+						}
+					}
+					// Flank or chase when no enemy is visible or approaching.
+					else
+					{
+						progress = 513;
+						TryFlankOrChase();
 					}
 				}
 				else
@@ -1080,42 +1261,25 @@ namespace CombatAI.Comps
 						if (nearestEnemyDist > 6 * personality.cover)
 						{
 							CastPositionRequest request = new CastPositionRequest();
-							request.caster              = selPawn;
-							request.target              = nearestEnemy;
-							request.maxRangeFromTarget  = 9999;
-							request.verb                = verb;
-							request.maxRangeFromCaster  = (Maths.Max(Maths.Min(verb.EffectiveRange, nearestEnemyDist) / 2f, 10f) * personality.cover + distOffset) * Finder.P50;
-							request.wantCoverFromTarget = true;
+							request.caster                = selPawn;
+							request.target                = nearestEnemy;
+							request.maxRangeFromTarget    = 9999;
+							request.verb                  = verb;
+							request.maxRangeFromCaster    = (Maths.Max(Maths.Min(verb.EffectiveRange, nearestEnemyDist) / 2f, 10f) * personality.cover + distOffset) * Finder.P50;
+							request.wantCoverFromTarget   = true;
+							request.preferredCastPosition = !IsAIAutoControlled ? GetLateralSpreadPos(nearestEnemy) : null;
 							if (CastPositionFinder.TryFindCastPosition(request, out IntVec3 cell) && cell != selPos && (ShouldMoveTo(cell) || Rand.Chance(moveBias)))
 							{
 								StartOrQueueCoverJob(cell, 0);
 							}
 							else if (ShouldShootNow())
 							{
-								_last = 52;
-								Job job_waitCombat = JobMaker.MakeJob(JobDefOf.Wait_Combat, Rand.Int % 100 + 100);
-								job_waitCombat.playerForced                   = forcedTarget.IsValid;
-								job_waitCombat.endIfCantShootTargetFromCurPos = true;
-								if (!IsPerformingMeleeAnimation(selPawn))
-								{
-									selPawn.jobs.ClearQueuedJobs();
-									selPawn.jobs.StartJob(job_waitCombat, JobCondition.InterruptForced);
-									data.LastInterrupted = GenTicks.TicksGame;
-								}
+								StartWaitCombatJob(52);
 							}
 						}
 						else if (ShouldShootNow())
 						{
-							_last = 53;
-							Job job_waitCombat = JobMaker.MakeJob(JobDefOf.Wait_Combat, Rand.Int % 100 + 100);
-							job_waitCombat.playerForced                   = forcedTarget.IsValid;
-							job_waitCombat.endIfCantShootTargetFromCurPos = true;
-							if (!IsPerformingMeleeAnimation(selPawn))
-							{
-								selPawn.jobs.ClearQueuedJobs();
-								selPawn.jobs.StartJob(job_waitCombat, JobCondition.InterruptForced);
-								data.LastInterrupted = GenTicks.TicksGame;
-							}
+							StartWaitCombatJob(53);
 						}
 					}
 					// best enemy is approaching but not yet in view
@@ -1193,40 +1357,10 @@ namespace CombatAI.Comps
 						{
 							Log.Error($"CoverPositionFinder.TryFindCoverPosition threw exception for {selPawn} progress:{progress} \n{ex}");
 						}
-					} else if (IsAIAutoControlled)
+					} else
 					{
 						progress = 525;
-						if (TryGetFlankTarget(verb, selFlags, out Thing flankTarget, out IntVec3 flankCell))
-						{
-							_bestEnemy = flankTarget;
-							_last      = 81;
-							StartOrQueueCoverJob(flankCell, 40);
-						}
-						else if (nearestEnemy != null)
-						{
-							_bestEnemy = nearestEnemy;
-							bool enemyRetreating = IsEnemyRetreating(nearestEnemy as Pawn);
-							// Chase if: no one is shooting at us, OR the target is already fleeing
-							if ((rangedEnemiesTargetingSelf.Count == 0 || enemyRetreating) &&
-								(sightReader.GetDynamicFriendlyFlags(nearestEnemy.Position) & selFlags) != 0)
-							{
-								float maxRange = enemyRetreating
-									? Mathf.Min(nearestEnemyDist * 0.8f, verb.EffectiveRange * personality.cover)
-									: Mathf.Min(nearestEnemyDist, verb.EffectiveRange * personality.cover);
-								CastPositionRequest request = new CastPositionRequest();
-								request.caster              = selPawn;
-								request.target              = nearestEnemy;
-								request.maxRangeFromTarget  = verb.EffectiveRange * 0.9f;
-								request.verb                = verb;
-								request.maxRangeFromCaster  = maxRange;
-								request.wantCoverFromTarget = true;
-								if (CastPositionFinder.TryFindCastPosition(request, out IntVec3 cell) && cell != selPos)
-								{
-									_last = 80;
-									StartOrQueueCoverJob(cell, 30);
-								}
-							}
-						}
+						TryFlankOrChase();
 					}
 				}
 				
@@ -1443,7 +1577,7 @@ namespace CombatAI.Comps
 					{
 						// For debugging and logging.
 						progress = 911;
-						if (ShouldMoveTo(cell))
+						if (ShouldMoveTo(cell) && IsMechanoidDestValid(cell))
 						{
 							if (cell != selPos)
 							{
@@ -1498,7 +1632,7 @@ namespace CombatAI.Comps
 					}
 					if (foundDuck)
 					{
-						bool diff = cell != selPos;
+						bool diff = cell != selPos && IsMechanoidDestValid(cell);
 						// run to cover
 						if (diff)
 						{
@@ -1815,9 +1949,9 @@ namespace CombatAI.Comps
 				yield return cover;
 				yield return cast;
 			}
-			if (selPawn.IsColonist && selPawn.Drafted)
+			if ((selPawn.IsColonist || (selPawn.RaceProps.IsMechanoid && selPawn.Faction != null && selPawn.Faction.IsPlayerSafe())) && selPawn.Drafted)
 			{
-				// Only yield this gizmo from the first selected drafted colonist.
+				// Only yield this gizmo from the first selected drafted colonist or friendly mechanoid.
 				// GizmoGridDrawer calls toggleAction for every gizmo in the same group,
 				// so yielding from all pawns causes even numbers of pawns to cancel each other out.
 				bool isGroupLeader = true;
@@ -1826,7 +1960,7 @@ namespace CombatAI.Comps
 				{
 					Pawn p = selectedPawns[si];
 					if (p == selPawn) break;
-					if (p.IsColonist && p.Drafted && p.AI() != null)
+					if ((p.IsColonist || (p.RaceProps.IsMechanoid && p.Faction != null && p.Faction.IsPlayerSafe())) && p.Drafted && p.AI() != null)
 					{
 						isGroupLeader = false;
 						break;
@@ -1843,7 +1977,7 @@ namespace CombatAI.Comps
 					{
 						foreach (Pawn pawn in Find.Selector.SelectedPawns)
 						{
-							if (pawn.IsColonist && pawn.Drafted)
+							if ((pawn.IsColonist || (pawn.RaceProps.IsMechanoid && pawn.Faction != null && pawn.Faction.IsPlayerSafe())) && pawn.Drafted)
 							{
 								ThingComp_CombatAI comp = pawn.AI();
 								if (comp != null && comp.aiAutoControl)
@@ -1859,7 +1993,7 @@ namespace CombatAI.Comps
 						bool anyEnabled = false;
 						foreach (Pawn pawn in Find.Selector.SelectedPawns)
 						{
-							if (pawn.IsColonist && pawn.Drafted)
+							if ((pawn.IsColonist || (pawn.RaceProps.IsMechanoid && pawn.Faction != null && pawn.Faction.IsPlayerSafe())) && pawn.Drafted)
 							{
 								ThingComp_CombatAI comp = pawn.AI();
 								if (comp != null && comp.aiAutoControl)
@@ -1872,7 +2006,7 @@ namespace CombatAI.Comps
 						bool newVal = !anyEnabled;
 						foreach (Pawn pawn in Find.Selector.SelectedPawns)
 						{
-							if (pawn.IsColonist)
+							if (pawn.IsColonist || (pawn.RaceProps.IsMechanoid && pawn.Faction != null && pawn.Faction.IsPlayerSafe()))
 							{
 								ThingComp_CombatAI comp = pawn.AI();
 								if (comp != null)

@@ -23,7 +23,6 @@ namespace CombatAI
 	{
 		private const int SECTION_SIZE = 16;
 
-		private static          float     zoom;
 		private static readonly Texture2D fogTex;
 		private static readonly Mesh      mesh;
 		private static readonly Shader    fogShader;
@@ -542,10 +541,7 @@ namespace CombatAI
 						grid2d[i][j] = new ISection(this, new Rect(new Vector2(i * SECTION_SIZE, j * SECTION_SIZE), Vector2.one * SECTION_SIZE), mapRect, mesh, fogTex, fogShader);
 					}
 				}
-				asyncActions.EnqueueOffThreadAction(() =>
-				{
-					OffThreadLoop(0, 0, grid2d.Length, grid2d[0].Length);
-				});
+				asyncActions.EnqueueOffThreadAction(OffThreadLoop);
 			}
 			if (!alive || !Finder.Settings.FogOfWar_Enabled)
 			{
@@ -594,7 +590,6 @@ namespace CombatAI
 				screenMaxV = Mathf.FloorToInt(mapScreenRect.yMax / SECTION_SIZE);
 				//mapScreenRect.ExpandedBy(32, 32);
 				asyncActions.ExecuteMainThreadActions();
-				zoom = Mathf.CeilToInt(Mathf.Clamp(CombatAI.Compatibility.CameraDriverCompat.GetRootPosY(Find.CameraDriver), 15, 30f));
 				DrawFog(Mathf.FloorToInt(mapScreenRect.xMin / SECTION_SIZE), Mathf.FloorToInt(mapScreenRect.yMin / SECTION_SIZE), Mathf.FloorToInt(mapScreenRect.xMax / SECTION_SIZE), Mathf.FloorToInt(mapScreenRect.yMax / SECTION_SIZE));
 			}
 		}
@@ -646,13 +641,13 @@ namespace CombatAI
 					{
 						section.ApplyFogged();
 					}
-					section.Draw(mapScreenRect);
+					section.Draw();
 				}
 			}
 			updateNum++;
 		}
 
-		private void OffThreadLoop(int minU, int minV, int maxU, int maxV)
+		private void OffThreadLoop()
 		{
 			Stopwatch       stopwatch = new Stopwatch();
 			List<ITempSpot> spots     = new List<ITempSpot>();
@@ -960,7 +955,7 @@ namespace CombatAI
 				dirty = changed;
 			}
 
-			public void Draw(Rect screenRect)
+			public void Draw()
 			{
 				GenDraw.DrawMeshNowOrLater(mesh, pos, Quaternion.identity, mat, false);
 			}

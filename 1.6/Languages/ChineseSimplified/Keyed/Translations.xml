@@ -1,100 +1,100 @@
-This XML file does not appear to have any style information associated with it. The document tree is shown below.
+<?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
-<CombatAI>Combat AI 5000</CombatAI>
-<CombatAI.Sym.Empty/>
-<CombatAI.Close>关闭</CombatAI.Close>
-<CombatAI.Apply>应用</CombatAI.Apply>
-<CombatAI.Open>打开</CombatAI.Open>
-<CombatAI.Hide>隐藏</CombatAI.Hide>
-<CombatAI.Expand>展开</CombatAI.Expand>
-<CombatAI.Quick.Welcome>欢迎使用 CAI-5000</CombatAI.Quick.Welcome>
-<CombatAI.DefKindSettings.Title>AI 种族设置</CombatAI.DefKindSettings.Title>
-<CombatAI.DefKindSettings.Description>在这里，您可以为每个种族配置不同的 AI 设置。</CombatAI.DefKindSettings.Description>
-<CombatAI.DefKindSettings.Selected>已选择</CombatAI.DefKindSettings.Selected>
-<CombatAI.Gizmos.AutoControl>CAI 自动控制</CombatAI.Gizmos.AutoControl>
-<CombatAI.Gizmos.AutoControl.Desc>让战斗 AI 在战斗中自动控制该殖民者。当被征召时，CAI 将寻找掩护、牵制敌人并智能地追击目标。</CombatAI.Gizmos.AutoControl.Desc>
-<CombatAI.Quick.Welcome.Description>此快速设置页面将帮助您快速设置 CAI-5000 的不同功能！</CombatAI.Quick.Welcome.Description>
-<CombatAI.Quick.QuickSetup>快速设置选项</CombatAI.Quick.QuickSetup>
-<CombatAI.Quick.Difficulty>请选择难度等级</CombatAI.Quick.Difficulty>
-<CombatAI.Quick.Difficulty.Selected>已应用 {0} 难度等级！</CombatAI.Quick.Difficulty.Selected>
-<CombatAI.Quick.Difficulty.Selected.Warning>警告：{0} 难度等级可能导致性能问题！</CombatAI.Quick.Difficulty.Selected.Warning>
-<CombatAI.PlaceWorker.WallMounted>需要安装在墙壁或坚固结构上</CombatAI.PlaceWorker.WallMounted>
-<CombatAI.Preparing>正在准备战斗 AI</CombatAI.Preparing>
-<CombatAI.Animator.Controller>保持</CombatAI.Animator.Controller>
-<CombatAI.Animator.Controller.Description>保持当前角度</CombatAI.Animator.Controller.Description>
-<CombatAI.Settings.Basic>基本设置</CombatAI.Settings.Basic>
-<CombatAI.Settings.Basic.RandomizedPersonality>根据派系领导者和当前季节启用派系战术的变化</CombatAI.Settings.Basic.RandomizedPersonality>
-<CombatAI.Settings.Basic.Presets>性能/难度预设</CombatAI.Settings.Basic.Presets>
-<CombatAI.Settings.Basic.Presets.Easy>简单/性能</CombatAI.Settings.Basic.Presets.Easy>
-<CombatAI.Settings.Basic.Presets.Normal>普通</CombatAI.Settings.Basic.Presets.Normal>
-<CombatAI.Settings.Basic.Presets.Hard>困难</CombatAI.Settings.Basic.Presets.Hard>
-<CombatAI.Settings.Basic.Temperature>让 AI 注意温度</CombatAI.Settings.Basic.Temperature>
-<CombatAI.Settings.Basic.Presets.Deathwish>死志</CombatAI.Settings.Basic.Presets.Deathwish>
-<CombatAI.Settings.Basic.Presets.Applied>已应用预设：</CombatAI.Settings.Basic.Presets.Applied>
-<CombatAI.Settings.Basic.Presets.Description>性能预设将决定 AI 计算的复杂性及其间隔。更复杂的计算意味着更难的 AI，但性能较低。默认是普通。</CombatAI.Settings.Basic.Presets.Description>
-<CombatAI.Settings.Basic.Sprinting>启用冲刺</CombatAI.Settings.Basic.Sprinting>
-<CombatAI.Settings.Basic.Sprinting.Description>允许 AI 在冲向掩护时使用冲刺。如果你不喜欢非原版内容，请关闭此选项。</CombatAI.Settings.Basic.Sprinting.Description>
-<CombatAI.Settings.Basic.Groups>启用战术小组</CombatAI.Settings.Basic.Groups>
-<CombatAI.Settings.Basic.Groups.Description>袭击者将被分配到战术小组（2-10 人），每个小组都有自己的目标。并非所有角色都会被分配到小组，一些角色将保持默认的攻击任务。</CombatAI.Settings.Basic.Groups.Description>
-<CombatAI.Settings.Basic.SappingMul>穿墙路径成本倍增器（默认值为 1.0）</CombatAI.Settings.Basic.SappingMul>
-<CombatAI.Settings.Basic.SappingMul.Description>穿墙路径成本倍增器。值越高，袭击者越不可能穿墙路径。</CombatAI.Settings.Basic.SappingMul.Description>
-<CombatAI.Settings.Basic.FogOfWar>[BETA] 战争迷雾</CombatAI.Settings.Basic.FogOfWar>
-<CombatAI.Settings.Basic.FogOfWar.Enable>开启战争迷雾</CombatAI.Settings.Basic.FogOfWar.Enable>
-<CombatAI.Settings.Basic.FogOfWar.Allies>盟友揭示战争迷雾</CombatAI.Settings.Basic.FogOfWar.Allies>
-<CombatAI.Settings.Basic.FogOfWar.Animals>殖民地动物揭示战争迷雾</CombatAI.Settings.Basic.FogOfWar.Animals>
-<CombatAI.Settings.Basic.FogOfWar.Animals.SmartOnly>只有智慧动物揭示战争迷雾</CombatAI.Settings.Basic.FogOfWar.Animals.SmartOnly>
-<CombatAI.Settings.Basic.FogOfWar.Turrets>殖民地炮塔揭示战争迷雾</CombatAI.Settings.Basic.FogOfWar.Turrets>
-<CombatAI.Settings.Basic.FogOfWar.CloseInColony>在殖民地地图中关闭战争迷雾</CombatAI.Settings.Basic.FogOfWar.CloseInColony>
-<CombatAI.Settings.Basic.FogOfWar.CloseInColony.Description>启用后，战斗 AI 的迷雾覆盖将在玩家殖民地（家园）地图上被禁用。</CombatAI.Settings.Basic.FogOfWar.CloseInColony.Description>
-<CombatAI.Settings.Basic.FogOfWar.UseVanillaUnexplored>使用未探索区域覆盖战争迷雾</CombatAI.Settings.Basic.FogOfWar.UseVanillaUnexplored>
-<CombatAI.Settings.Basic.FogOfWar.UseVanillaUnexplored.Description>启用后，CAI 将使用未探索区域覆盖隐藏的单元格。</CombatAI.Settings.Basic.FogOfWar.UseVanillaUnexplored.Description>
-<CombatAI.Settings.Basic.FogOfWar.Density>迷雾密度（战争迷雾的黑暗程度）</CombatAI.Settings.Basic.FogOfWar.Density>
-<CombatAI.Settings.Basic.FogOfWar.Density.Readouts>{0} 迷雾密度</CombatAI.Settings.Basic.FogOfWar.Density.Readouts>
-<CombatAI.Settings.Basic.FogOfWar.RangeMul>战争迷雾视野半径倍率（默认值为 1.0）</CombatAI.Settings.Basic.FogOfWar.RangeMul>
-<CombatAI.Settings.Basic.FogOfWar.RangeMul.Readouts>{0}x</CombatAI.Settings.Basic.FogOfWar.RangeMul.Readouts>
-<CombatAI.Settings.Basic.FogOfWar.FadeMul>战争迷雾视野衰减半径倍率（默认值为 0.5）</CombatAI.Settings.Basic.FogOfWar.FadeMul>
-<CombatAI.Settings.Basic.FogOfWar.FadeMul.Readouts>{0}x</CombatAI.Settings.Basic.FogOfWar.FadeMul.Readouts>
-<CombatAI.Settings.Basic.FogOfWar.Reinit.Button>初始化战争迷雾（修复旧存档）</CombatAI.Settings.Basic.FogOfWar.Reinit.Button>
-<CombatAI.Settings.Basic.FogOfWar.Reinit.Description>将整个地图重置为原生未探索状态，然后从所有玩家角色开始进行迷雾清除。仅需在加载存在旧版本此MOD的存档时使用一次。</CombatAI.Settings.Basic.FogOfWar.Reinit.Description>
-<CombatAI.Settings.Basic.KillBoxKiller>启用 Killbox 杀手 5000</CombatAI.Settings.Basic.KillBoxKiller>
-<CombatAI.Settings.Basic.CELean>启用 Combat Extended 倾斜配置</CombatAI.Settings.Basic.CELean>
-<CombatAI.Settings.Basic.PerformanceOpt>启用动态性能设置</CombatAI.Settings.Basic.PerformanceOpt>
-<CombatAI.Settings.Basic.PerformanceOpt.Warning>警告：未启用动态性能设置将导致性能下降和卡顿！</CombatAI.Settings.Basic.PerformanceOpt.Warning>
-<CombatAI.Settings.Basic.PerformanceOpt.Description>自动调整设置以保持良好的 TPS 和 AI 水平。</CombatAI.Settings.Basic.PerformanceOpt.Description>
-<CombatAI.Settings.Basic.Caster>启用火力位置调整</CombatAI.Settings.Basic.Caster>
-<CombatAI.Settings.Basic.Targeter>启用目标选择调整</CombatAI.Settings.Basic.Targeter>
-<CombatAI.Settings.Basic.Flanking>启用积极侧翼攻击</CombatAI.Settings.Basic.Flanking>
-<CombatAI.Settings.Basic.Reaction>启用快速反应</CombatAI.Settings.Basic.Reaction>
-<CombatAI.Settings.Basic.Retreat>启用战术撤退</CombatAI.Settings.Basic.Retreat>
-<CombatAI.Settings.Basic.Pather>启用路径寻找调整</CombatAI.Settings.Basic.Pather>
-<CombatAI.Settings.Basic.DestWeight>路径寻找激进程度</CombatAI.Settings.Basic.DestWeight>
-<CombatAI.Settings.Basic.DestWeight.Description>较低的数值意味着路径寻找在避免敌人、侧翼攻击和最小化角色风险方面会更激进。</CombatAI.Settings.Basic.DestWeight.Description>
-<CombatAI.Settings.Basic.DestWeight.Warning>警告：较低的数值会导致大量性能问题。</CombatAI.Settings.Basic.DestWeight.Warning>
-<CombatAI.Settings.Debugging>调试</CombatAI.Settings.Debugging>
-<CombatAI.Settings.Debugging.Enable>启用调试</CombatAI.Settings.Debugging.Enable>
-<CombatAI.Settings.Advance>高级设置</CombatAI.Settings.Advance>
-<CombatAI.Settings.Advance.SquadPathWidth>避让路径宽度。避让路径宽度决定侧翼攻击的激进程度。</CombatAI.Settings.Advance.SquadPathWidth>
-<CombatAI.Settings.Advance.SquadPathWidth.Description>路径宽度 {0} 个单元格（默认值：1）</CombatAI.Settings.Advance.SquadPathWidth.Description>
-<CombatAI.Settings.Advance.Warning>警告：此设置仅适用于高级用户！如果您不知道自己在做什么，请不要启用！</CombatAI.Settings.Advance.Warning>
-<CombatAI.Settings.Advance.Enable>我是高级用户！</CombatAI.Settings.Advance.Enable>
-<CombatAI.Settings.Advance.Sight.Performance>性能</CombatAI.Settings.Advance.Sight.Performance>
-<CombatAI.Settings.Advance.Sight.Performance.Description>您可以调整将角色/炮塔划分为多少个桶以及它们的更新频率。警告：如果您不知道自己在做什么，请不要使用此功能</CombatAI.Settings.Advance.Sight.Performance.Description>
-<CombatAI.Settings.Advance.Sight.Performance.FrienldiesAndEnemies>类人派系</CombatAI.Settings.Advance.Sight.Performance.FrienldiesAndEnemies>
-<CombatAI.Settings.Advance.Sight.Performance.MechsAndInsect>机甲和昆虫</CombatAI.Settings.Advance.Sight.Performance.MechsAndInsect>
-<CombatAI.Settings.Advance.Sight.Performance.WildLife>野生动物</CombatAI.Settings.Advance.Sight.Performance.WildLife>
-<CombatAI.Settings.Advance.Sight.Performance.Turrets>地图炮塔</CombatAI.Settings.Advance.Sight.Performance.Turrets>
-<CombatAI.Settings.Advance.Sight.Performance.Readouts.Frequency>更新频率 {0}Hz (桶 * 间隔)</CombatAI.Settings.Advance.Sight.Performance.Readouts.Frequency>
-<CombatAI.Settings.Advance.Sight.Performance.Readouts.Buckets>bucket数量 {0}</CombatAI.Settings.Advance.Sight.Performance.Readouts.Buckets>
-<CombatAI.Settings.Advance.Sight.Performance.Readouts.Interval>bucket更新间隔 {0} 个刻</CombatAI.Settings.Advance.Sight.Performance.Readouts.Interval>
-<CombatAI.Settings.Advance.Sight.Performance.Readouts.CarryLimit>{0} 个物体最多可以阻挡视线</CombatAI.Settings.Advance.Sight.Performance.Readouts.CarryLimit>
-<CombatAI.Settings.Advance.Sight.Performance.Readouts.CarryLimit.Description>沿视线的最大物体数量。这包括树木、建筑物等。较高的值意味着更准确的视线模型，但性能影响更大。</CombatAI.Settings.Advance.Sight.Performance.Readouts.CarryLimit.Description>
-<CombatAI.Settings.FactionTech>派系科技等级设置</CombatAI.Settings.FactionTech>
-<CombatAI.Settings.FactionTech.Desciption>在这里您可以配置具有不同科技等级的派系。</CombatAI.Settings.FactionTech.Desciption>
-<CombatAI.Settings.FactionTech.Tech>科技 {0}</CombatAI.Settings.FactionTech.Tech>
-<CombatAI.Settings.FactionTech.Duck>躲避 {0}x。较高的值意味着更可能躲避掩护</CombatAI.Settings.FactionTech.Duck>
-<CombatAI.Settings.FactionTech.Retreat>撤退 {0}x。较高的值意味着更可能撤退</CombatAI.Settings.FactionTech.Retreat>
-<CombatAI.Settings.FactionTech.Cover>掩护 {0}x。较高的值意味着更积极的掩护</CombatAI.Settings.FactionTech.Cover>
-<CombatAI.Settings.FactionTech.Pathing>路径 {0}x。较高的值意味着更积极的路径规划</CombatAI.Settings.FactionTech.Pathing>
-<CombatAI.Settings.FactionTech.Sapping>破坏 {0}x。较高的值意味着较少的破坏行为</CombatAI.Settings.FactionTech.Sapping>
-<CombatAI.Settings.FactionTech.Group>冲锋 {0}x。较高的值意味着小组更可能冲锋</CombatAI.Settings.FactionTech.Group>
+    <CombatAI>Combat AI 5000</CombatAI>
+    <CombatAI.Sym.Empty/>
+    <CombatAI.Close>关闭</CombatAI.Close>
+    <CombatAI.Apply>应用</CombatAI.Apply>
+    <CombatAI.Open>打开</CombatAI.Open>
+    <CombatAI.Hide>隐藏</CombatAI.Hide>
+    <CombatAI.Expand>展开</CombatAI.Expand>
+    <CombatAI.Quick.Welcome>欢迎使用 CAI-5000</CombatAI.Quick.Welcome>
+    <CombatAI.DefKindSettings.Title>AI 种族设置</CombatAI.DefKindSettings.Title>
+    <CombatAI.DefKindSettings.Description>在这里，您可以为每个种族配置不同的 AI 设置。</CombatAI.DefKindSettings.Description>
+    <CombatAI.DefKindSettings.Selected>已选择</CombatAI.DefKindSettings.Selected>
+    <CombatAI.Gizmos.AutoControl>CAI 自动控制</CombatAI.Gizmos.AutoControl>
+    <CombatAI.Gizmos.AutoControl.Desc>让战斗 AI 在战斗中自动控制该殖民者。当被征召时，CAI 将寻找掩护、牵制敌人并智能地追击目标。</CombatAI.Gizmos.AutoControl.Desc>
+    <CombatAI.Quick.Welcome.Description>此快速设置页面将帮助您快速设置 CAI-5000 的不同功能！</CombatAI.Quick.Welcome.Description>
+    <CombatAI.Quick.QuickSetup>快速设置选项</CombatAI.Quick.QuickSetup>
+    <CombatAI.Quick.Difficulty>请选择难度等级</CombatAI.Quick.Difficulty>
+    <CombatAI.Quick.Difficulty.Selected>已应用 {0} 难度等级！</CombatAI.Quick.Difficulty.Selected>
+    <CombatAI.Quick.Difficulty.Selected.Warning>警告：{0} 难度等级可能导致性能问题！</CombatAI.Quick.Difficulty.Selected.Warning>
+    <CombatAI.PlaceWorker.WallMounted>需要安装在墙壁或坚固结构上</CombatAI.PlaceWorker.WallMounted>
+    <CombatAI.Preparing>正在准备战斗 AI</CombatAI.Preparing>
+    <CombatAI.Animator.Controller>保持</CombatAI.Animator.Controller>
+    <CombatAI.Animator.Controller.Description>保持当前角度</CombatAI.Animator.Controller.Description>
+    <CombatAI.Settings.Basic>基本设置</CombatAI.Settings.Basic>
+    <CombatAI.Settings.Basic.RandomizedPersonality>根据派系领导者和当前季节启用派系战术的变化</CombatAI.Settings.Basic.RandomizedPersonality>
+    <CombatAI.Settings.Basic.Presets>性能/难度预设</CombatAI.Settings.Basic.Presets>
+    <CombatAI.Settings.Basic.Presets.Easy>简单/性能</CombatAI.Settings.Basic.Presets.Easy>
+    <CombatAI.Settings.Basic.Presets.Normal>普通</CombatAI.Settings.Basic.Presets.Normal>
+    <CombatAI.Settings.Basic.Presets.Hard>困难</CombatAI.Settings.Basic.Presets.Hard>
+    <CombatAI.Settings.Basic.Temperature>让 AI 注意温度</CombatAI.Settings.Basic.Temperature>
+    <CombatAI.Settings.Basic.Presets.Deathwish>死志</CombatAI.Settings.Basic.Presets.Deathwish>
+    <CombatAI.Settings.Basic.Presets.Applied>已应用预设：</CombatAI.Settings.Basic.Presets.Applied>
+    <CombatAI.Settings.Basic.Presets.Description>性能预设将决定 AI 计算的复杂性及其间隔。更复杂的计算意味着更难的 AI，但性能较低。默认是普通。</CombatAI.Settings.Basic.Presets.Description>
+    <CombatAI.Settings.Basic.Sprinting>启用冲刺</CombatAI.Settings.Basic.Sprinting>
+    <CombatAI.Settings.Basic.Sprinting.Description>允许 AI 在冲向掩护时使用冲刺。如果你不喜欢非原版内容，请关闭此选项。</CombatAI.Settings.Basic.Sprinting.Description>
+    <CombatAI.Settings.Basic.Groups>启用战术小组</CombatAI.Settings.Basic.Groups>
+    <CombatAI.Settings.Basic.Groups.Description>袭击者将被分配到战术小组（2-10 人），每个小组都有自己的目标。并非所有角色都会被分配到小组，一些角色将保持默认的攻击任务。</CombatAI.Settings.Basic.Groups.Description>
+    <CombatAI.Settings.Basic.SappingMul>穿墙路径成本倍增器（默认值为 1.0）</CombatAI.Settings.Basic.SappingMul>
+    <CombatAI.Settings.Basic.SappingMul.Description>穿墙路径成本倍增器。值越高，袭击者越不可能穿墙路径。</CombatAI.Settings.Basic.SappingMul.Description>
+    <CombatAI.Settings.Basic.FogOfWar>[BETA] 战争迷雾</CombatAI.Settings.Basic.FogOfWar>
+    <CombatAI.Settings.Basic.FogOfWar.Enable>开启战争迷雾</CombatAI.Settings.Basic.FogOfWar.Enable>
+    <CombatAI.Settings.Basic.FogOfWar.Allies>盟友揭示战争迷雾</CombatAI.Settings.Basic.FogOfWar.Allies>
+    <CombatAI.Settings.Basic.FogOfWar.Animals>殖民地动物揭示战争迷雾</CombatAI.Settings.Basic.FogOfWar.Animals>
+    <CombatAI.Settings.Basic.FogOfWar.Animals.SmartOnly>只有智慧动物揭示战争迷雾</CombatAI.Settings.Basic.FogOfWar.Animals.SmartOnly>
+    <CombatAI.Settings.Basic.FogOfWar.Turrets>殖民地炮塔揭示战争迷雾</CombatAI.Settings.Basic.FogOfWar.Turrets>
+    <CombatAI.Settings.Basic.FogOfWar.CloseInColony>在殖民地地图中关闭战争迷雾</CombatAI.Settings.Basic.FogOfWar.CloseInColony>
+    <CombatAI.Settings.Basic.FogOfWar.CloseInColony.Description>启用后，战斗 AI 的迷雾覆盖将在玩家殖民地（家园）地图上被禁用。</CombatAI.Settings.Basic.FogOfWar.CloseInColony.Description>
+    <CombatAI.Settings.Basic.FogOfWar.UseVanillaUnexplored>使用未探索区域覆盖战争迷雾</CombatAI.Settings.Basic.FogOfWar.UseVanillaUnexplored>
+    <CombatAI.Settings.Basic.FogOfWar.UseVanillaUnexplored.Description>启用后，CAI 将使用未探索区域覆盖隐藏的单元格。</CombatAI.Settings.Basic.FogOfWar.UseVanillaUnexplored.Description>
+    <CombatAI.Settings.Basic.FogOfWar.Density>迷雾密度（战争迷雾的黑暗程度）</CombatAI.Settings.Basic.FogOfWar.Density>
+    <CombatAI.Settings.Basic.FogOfWar.Density.Readouts>{0} 迷雾密度</CombatAI.Settings.Basic.FogOfWar.Density.Readouts>
+    <CombatAI.Settings.Basic.FogOfWar.RangeMul>战争迷雾视野半径倍率（默认值为 1.0）</CombatAI.Settings.Basic.FogOfWar.RangeMul>
+    <CombatAI.Settings.Basic.FogOfWar.RangeMul.Readouts>{0}x</CombatAI.Settings.Basic.FogOfWar.RangeMul.Readouts>
+    <CombatAI.Settings.Basic.FogOfWar.FadeMul>战争迷雾视野衰减半径倍率（默认值为 0.5）</CombatAI.Settings.Basic.FogOfWar.FadeMul>
+    <CombatAI.Settings.Basic.FogOfWar.FadeMul.Readouts>{0}x</CombatAI.Settings.Basic.FogOfWar.FadeMul.Readouts>
+    <CombatAI.Settings.Basic.FogOfWar.Reinit.Button>初始化战争迷雾（修复旧存档）</CombatAI.Settings.Basic.FogOfWar.Reinit.Button>
+    <CombatAI.Settings.Basic.FogOfWar.Reinit.Description>将整个地图重置为原生未探索状态，然后从所有玩家角色开始进行迷雾清除。仅需在加载存在旧版本此MOD的存档时使用一次。</CombatAI.Settings.Basic.FogOfWar.Reinit.Description>
+    <CombatAI.Settings.Basic.KillBoxKiller>启用 Killbox 杀手 5000</CombatAI.Settings.Basic.KillBoxKiller>
+    <CombatAI.Settings.Basic.CELean>启用 Combat Extended 倾斜配置</CombatAI.Settings.Basic.CELean>
+    <CombatAI.Settings.Basic.PerformanceOpt>启用动态性能设置</CombatAI.Settings.Basic.PerformanceOpt>
+    <CombatAI.Settings.Basic.PerformanceOpt.Warning>警告：未启用动态性能设置将导致性能下降和卡顿！</CombatAI.Settings.Basic.PerformanceOpt.Warning>
+    <CombatAI.Settings.Basic.PerformanceOpt.Description>自动调整设置以保持良好的 TPS 和 AI 水平。</CombatAI.Settings.Basic.PerformanceOpt.Description>
+    <CombatAI.Settings.Basic.Caster>启用火力位置调整</CombatAI.Settings.Basic.Caster>
+    <CombatAI.Settings.Basic.Targeter>启用目标选择调整</CombatAI.Settings.Basic.Targeter>
+    <CombatAI.Settings.Basic.Flanking>启用积极侧翼攻击</CombatAI.Settings.Basic.Flanking>
+    <CombatAI.Settings.Basic.Reaction>启用快速反应</CombatAI.Settings.Basic.Reaction>
+    <CombatAI.Settings.Basic.Retreat>启用战术撤退</CombatAI.Settings.Basic.Retreat>
+    <CombatAI.Settings.Basic.Pather>启用路径寻找调整</CombatAI.Settings.Basic.Pather>
+    <CombatAI.Settings.Basic.DestWeight>路径寻找激进程度</CombatAI.Settings.Basic.DestWeight>
+    <CombatAI.Settings.Basic.DestWeight.Description>较低的数值意味着路径寻找在避免敌人、侧翼攻击和最小化角色风险方面会更激进。</CombatAI.Settings.Basic.DestWeight.Description>
+    <CombatAI.Settings.Basic.DestWeight.Warning>警告：较低的数值会导致大量性能问题。</CombatAI.Settings.Basic.DestWeight.Warning>
+    <CombatAI.Settings.Debugging>调试</CombatAI.Settings.Debugging>
+    <CombatAI.Settings.Debugging.Enable>启用调试</CombatAI.Settings.Debugging.Enable>
+    <CombatAI.Settings.Advance>高级设置</CombatAI.Settings.Advance>
+    <CombatAI.Settings.Advance.SquadPathWidth>避让路径宽度。避让路径宽度决定侧翼攻击的激进程度。</CombatAI.Settings.Advance.SquadPathWidth>
+    <CombatAI.Settings.Advance.SquadPathWidth.Description>路径宽度 {0} 个单元格（默认值：1）</CombatAI.Settings.Advance.SquadPathWidth.Description>
+    <CombatAI.Settings.Advance.Warning>警告：此设置仅适用于高级用户！如果您不知道自己在做什么，请不要启用！</CombatAI.Settings.Advance.Warning>
+    <CombatAI.Settings.Advance.Enable>我是高级用户！</CombatAI.Settings.Advance.Enable>
+    <CombatAI.Settings.Advance.Sight.Performance>性能</CombatAI.Settings.Advance.Sight.Performance>
+    <CombatAI.Settings.Advance.Sight.Performance.Description>您可以调整将角色/炮塔划分为多少个桶以及它们的更新频率。警告：如果您不知道自己在做什么，请不要使用此功能</CombatAI.Settings.Advance.Sight.Performance.Description>
+    <CombatAI.Settings.Advance.Sight.Performance.FrienldiesAndEnemies>类人派系</CombatAI.Settings.Advance.Sight.Performance.FrienldiesAndEnemies>
+    <CombatAI.Settings.Advance.Sight.Performance.MechsAndInsect>机甲和昆虫</CombatAI.Settings.Advance.Sight.Performance.MechsAndInsect>
+    <CombatAI.Settings.Advance.Sight.Performance.WildLife>野生动物</CombatAI.Settings.Advance.Sight.Performance.WildLife>
+    <CombatAI.Settings.Advance.Sight.Performance.Turrets>地图炮塔</CombatAI.Settings.Advance.Sight.Performance.Turrets>
+    <CombatAI.Settings.Advance.Sight.Performance.Readouts.Frequency>更新频率 {0}Hz (桶 * 间隔)</CombatAI.Settings.Advance.Sight.Performance.Readouts.Frequency>
+    <CombatAI.Settings.Advance.Sight.Performance.Readouts.Buckets>bucket数量 {0}</CombatAI.Settings.Advance.Sight.Performance.Readouts.Buckets>
+    <CombatAI.Settings.Advance.Sight.Performance.Readouts.Interval>bucket更新间隔 {0} 个刻</CombatAI.Settings.Advance.Sight.Performance.Readouts.Interval>
+    <CombatAI.Settings.Advance.Sight.Performance.Readouts.CarryLimit>{0} 个物体最多可以阻挡视线</CombatAI.Settings.Advance.Sight.Performance.Readouts.CarryLimit>
+    <CombatAI.Settings.Advance.Sight.Performance.Readouts.CarryLimit.Description>沿视线的最大物体数量。这包括树木、建筑物等。较高的值意味着更准确的视线模型，但性能影响更大。</CombatAI.Settings.Advance.Sight.Performance.Readouts.CarryLimit.Description>
+    <CombatAI.Settings.FactionTech>派系科技等级设置</CombatAI.Settings.FactionTech>
+    <CombatAI.Settings.FactionTech.Desciption>在这里您可以配置具有不同科技等级的派系。</CombatAI.Settings.FactionTech.Desciption>
+    <CombatAI.Settings.FactionTech.Tech>科技 {0}</CombatAI.Settings.FactionTech.Tech>
+    <CombatAI.Settings.FactionTech.Duck>躲避 {0}x。较高的值意味着更可能躲避掩护</CombatAI.Settings.FactionTech.Duck>
+    <CombatAI.Settings.FactionTech.Retreat>撤退 {0}x。较高的值意味着更可能撤退</CombatAI.Settings.FactionTech.Retreat>
+    <CombatAI.Settings.FactionTech.Cover>掩护 {0}x。较高的值意味着更积极的掩护</CombatAI.Settings.FactionTech.Cover>
+    <CombatAI.Settings.FactionTech.Pathing>路径 {0}x。较高的值意味着更积极的路径规划</CombatAI.Settings.FactionTech.Pathing>
+    <CombatAI.Settings.FactionTech.Sapping>破坏 {0}x。较高的值意味着较少的破坏行为</CombatAI.Settings.FactionTech.Sapping>
+    <CombatAI.Settings.FactionTech.Group>冲锋 {0}x。较高的值意味着小组更可能冲锋</CombatAI.Settings.FactionTech.Group>
 </LanguageData>
