@@ -192,7 +192,8 @@ namespace CombatAI
                 }
                 else if (t is Building ed && ed.def.Fillage == FillCategory.Full)
                 {
-                    gridNoDoors[index] = grid[index] = 1.0f;
+                    // Transparent buildings (blockLight = false, e.g. glass walls) allow sight through.
+                    gridNoDoors[index] = grid[index] = ed.def.blockLight ? 1.0f : 0f;
                 }
                 else
                 {
