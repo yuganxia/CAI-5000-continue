@@ -197,9 +197,12 @@ namespace CombatAI
 			}
 			if (map.IsPlayerHome)
 			{
-				bool[] cache = _indoorRoomCache;
-				if (cache != null && index >= 0 && index < cache.Length && cache[index])
-					return false;
+				if (Finder.Settings.FogOfWar_IndoorVisible)
+				{
+					bool[] cache = _indoorRoomCache;
+					if (cache != null && index >= 0 && index < cache.Length && cache[index])
+						return false;
+				}
 			}
 			if (index >= 0 && index < cellIndices.NumGridCells)
 			{
@@ -557,28 +560,31 @@ namespace CombatAI
 			System.Array.Clear(protect, 0, count);
 			System.Array.Clear(protectExp, 0, count);
 
-			foreach (Room room in map.regionAndRoomUpdater.roomLookup.Values)
+			if (Finder.Settings.FogOfWar_IndoorVisible)
 			{
-				if (!room.ProperRoom || room.Dereferenced) continue;
+				foreach (Room room in map.regionAndRoomUpdater.roomLookup.Values)
+				{
+					if (!room.ProperRoom || room.Dereferenced) continue;
 
-				bool hasUnexplored = false;
-				foreach (IntVec3 cell in room.Cells)
-				{
-					int idx = cellIndices.CellToIndex(cell);
-					if ((uint)idx < (uint)count && fogState[idx] == CellFogState.VanillaUnexplored)
+					bool hasUnexplored = false;
+					foreach (IntVec3 cell in room.Cells)
 					{
-						hasUnexplored = true;
-						break;
+						int idx = cellIndices.CellToIndex(cell);
+						if ((uint)idx < (uint)count && fogState[idx] == CellFogState.VanillaUnexplored)
+						{
+							hasUnexplored = true;
+							break;
+						}
 					}
-				}
-				if (hasUnexplored) continue;
-				foreach (IntVec3 cell in room.Cells)
-				{
-					int idx = cellIndices.CellToIndex(cell);
-					if ((uint)idx < (uint)count)
+					if (hasUnexplored) continue;
+					foreach (IntVec3 cell in room.Cells)
 					{
-						protect[idx] = true;
-						cache[idx] = true;
+						int idx = cellIndices.CellToIndex(cell);
+						if ((uint)idx < (uint)count)
+						{
+							protect[idx] = true;
+							cache[idx] = true;
+						}
 					}
 				}
 			}
@@ -1016,7 +1022,6 @@ namespace CombatAI
 							{
 								if (prevState == CellFogState.VanillaExplored)
 								{
-									// 三相状态机：ProperRoom 格子禁止 CAI 生成迷雾
 									bool[] protect = comp._indoorProtectCache;
 									if (protect == null || (uint)index >= (uint)protect.Length || !protect[index])
 										comp.fogState[index] = CellFogState.CAIFogged;

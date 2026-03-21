@@ -159,6 +159,10 @@ namespace CombatAI.Gui
 
             if (Finder.Settings.FogOfWar_Enabled)
             {
+                collapsible.CheckboxLabeled(Keyed.CombatAI_Settings_Basic_FogOfWar_CloseInColony, ref Finder.Settings.FogOfWar_DisableOnPlayerMap, Keyed.CombatAI_Settings_Basic_FogOfWar_CloseInColony_Description, disabled: false);
+                collapsible.CheckboxLabeled(Keyed.CombatAI_Settings_Basic_FogOfWar_UseVanillaUnexplored, ref Finder.Settings.FogOfWar_UseVanillaUnexplored, Keyed.CombatAI_Settings_Basic_FogOfWar_UseVanillaUnexplored_Description, disabled: false);
+                collapsible.CheckboxLabeled(Keyed.CombatAI_Settings_Basic_FogOfWar_IndoorVisible, ref Finder.Settings.FogOfWar_IndoorVisible, Keyed.CombatAI_Settings_Basic_FogOfWar_IndoorVisible_Description, disabled: false);
+                collapsible.Line(1);
                 collapsible.CheckboxLabeled(Keyed.CombatAI_Settings_Basic_FogOfWar_Animals, ref Finder.Settings.FogOfWar_Animals);
                 collapsible.CheckboxLabeled(Keyed.CombatAI_Settings_Basic_FogOfWar_Animals_SmartOnly, ref Finder.Settings.FogOfWar_AnimalsSmartOnly, disabled: !Finder.Settings.FogOfWar_Animals);
                 collapsible.CheckboxLabeled(Keyed.CombatAI_Settings_Basic_FogOfWar_Allies, ref Finder.Settings.FogOfWar_Allies);

@@ -48,6 +48,8 @@
     <CombatAI.Settings.Basic.FogOfWar.CloseInColony.Description>When enabled, Combat AI's fog overlay is disabled on player colony (home) maps so the game's native unexplored fog is shown.</CombatAI.Settings.Basic.FogOfWar.CloseInColony.Description>
     <CombatAI.Settings.Basic.FogOfWar.UseVanillaUnexplored>Use vanilla unexplored overlay</CombatAI.Settings.Basic.FogOfWar.UseVanillaUnexplored>
     <CombatAI.Settings.Basic.FogOfWar.UseVanillaUnexplored.Description>When enabled, CAI will write its invisible cells to the game's FogGrid so vanilla unexplored areas cover hidden cells.</CombatAI.Settings.Basic.FogOfWar.UseVanillaUnexplored.Description>
+    <CombatAI.Settings.Basic.FogOfWar.IndoorVisible>Indoor rooms always visible</CombatAI.Settings.Basic.FogOfWar.IndoorVisible>
+    <CombatAI.Settings.Basic.FogOfWar.IndoorVisible.Description>When enabled, indoor rooms on the player home map are never fogged.</CombatAI.Settings.Basic.FogOfWar.IndoorVisible.Description>
     <CombatAI.Settings.Basic.FogOfWar.Density>Fog density (how dark the fog of war is)</CombatAI.Settings.Basic.FogOfWar.Density>
     <CombatAI.Settings.Basic.FogOfWar.Density.Readouts>{0} Fog desnity</CombatAI.Settings.Basic.FogOfWar.Density.Readouts>
     <CombatAI.Settings.Basic.FogOfWar.RangeMul>Fog of war sight radius multiplie (default is 1.0)</CombatAI.Settings.Basic.FogOfWar.RangeMul>

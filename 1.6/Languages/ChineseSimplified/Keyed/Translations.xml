@@ -48,6 +48,8 @@
     <CombatAI.Settings.Basic.FogOfWar.CloseInColony.Description>启用后，战斗 AI 的迷雾覆盖将在玩家殖民地（家园）地图上被禁用。</CombatAI.Settings.Basic.FogOfWar.CloseInColony.Description>
     <CombatAI.Settings.Basic.FogOfWar.UseVanillaUnexplored>使用未探索区域覆盖战争迷雾</CombatAI.Settings.Basic.FogOfWar.UseVanillaUnexplored>
     <CombatAI.Settings.Basic.FogOfWar.UseVanillaUnexplored.Description>启用后，CAI 将使用未探索区域覆盖隐藏的单元格。</CombatAI.Settings.Basic.FogOfWar.UseVanillaUnexplored.Description>
+    <CombatAI.Settings.Basic.FogOfWar.IndoorVisible>室内房间始终可见</CombatAI.Settings.Basic.FogOfWar.IndoorVisible>
+    <CombatAI.Settings.Basic.FogOfWar.IndoorVisible.Description>启用后，玩家家园地图上的室内房间将不受战争迷雾遮蔽。</CombatAI.Settings.Basic.FogOfWar.IndoorVisible.Description>
     <CombatAI.Settings.Basic.FogOfWar.Density>迷雾密度（战争迷雾的黑暗程度）</CombatAI.Settings.Basic.FogOfWar.Density>
     <CombatAI.Settings.Basic.FogOfWar.Density.Readouts>{0} 迷雾密度</CombatAI.Settings.Basic.FogOfWar.Density.Readouts>
     <CombatAI.Settings.Basic.FogOfWar.RangeMul>战争迷雾视野半径倍率（默认值为 1.0）</CombatAI.Settings.Basic.FogOfWar.RangeMul>

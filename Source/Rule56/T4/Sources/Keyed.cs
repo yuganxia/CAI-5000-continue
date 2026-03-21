@@ -583,6 +583,28 @@ namespace CombatAI.R
                    _CombatAI_Settings_Basic_FogOfWar_UseVanillaUnexplored_Description : _CombatAI_Settings_Basic_FogOfWar_UseVanillaUnexplored_Description = "CombatAI.Settings.Basic.FogOfWar.UseVanillaUnexplored.Description".Translate();
         }
 
+        private static TaggedString _CombatAI_Settings_Basic_FogOfWar_IndoorVisible = null;
+        /// <summary> Keyed string. key=<c>CombatAI.Settings.Basic.FogOfWar.IndoorVisible</c>. inner text:
+        ///
+        /// <code>Indoor rooms always visible</code>
+        /// </summary>       
+        public static TaggedString CombatAI_Settings_Basic_FogOfWar_IndoorVisible
+        {
+            get => _CombatAI_Settings_Basic_FogOfWar_IndoorVisible != null ?
+                   _CombatAI_Settings_Basic_FogOfWar_IndoorVisible : _CombatAI_Settings_Basic_FogOfWar_IndoorVisible = "CombatAI.Settings.Basic.FogOfWar.IndoorVisible".Translate();
+        }
+
+        private static TaggedString _CombatAI_Settings_Basic_FogOfWar_IndoorVisible_Description = null;
+        /// <summary> Keyed string. key=<c>CombatAI.Settings.Basic.FogOfWar.IndoorVisible.Description</c>. inner text:
+        ///
+        /// <code>When enabled, indoor rooms on the player home map are never fogged — enemies inside still trigger fog.</code>
+        /// </summary>       
+        public static TaggedString CombatAI_Settings_Basic_FogOfWar_IndoorVisible_Description
+        {
+            get => _CombatAI_Settings_Basic_FogOfWar_IndoorVisible_Description != null ?
+                   _CombatAI_Settings_Basic_FogOfWar_IndoorVisible_Description : _CombatAI_Settings_Basic_FogOfWar_IndoorVisible_Description = "CombatAI.Settings.Basic.FogOfWar.IndoorVisible.Description".Translate();
+        }
+
         private static TaggedString _CombatAI_Settings_Basic_FogOfWar_Density = null;
         /// <summary> Keyed string. key=<c>CombatAI.Settings.Basic.FogOfWar.Density</c>. inner text:
         ///
