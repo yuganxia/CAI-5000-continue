@@ -1163,65 +1163,83 @@ namespace CombatAI.Comps
 				if (!selPawn.RaceProps.Humanlike || bodySize > 2.0f)
 				{
 					progress = 511;
-					if (bestEnemyVisibleNow)
+					if (bodySize > 2.0f)
 					{
-						if (selPawn.mindState.enemyTarget == null)
+						// Large mechanicals: hold position and shoot only, no repositioning.
+						if (bestEnemyVisibleNow)
 						{
-							selPawn.mindState.enemyTarget = nearestEnemy;
-						}
-						// Try to find an optimal cast/cover position before shooting.
-						if (nearestEnemyDist > 6 * personality.cover)
-						{
-							CastPositionRequest request = new CastPositionRequest();
-							request.caster                = selPawn;
-							request.target                = nearestEnemy;
-							request.maxRangeFromTarget    = 9999;
-							request.verb                  = verb;
-							request.maxRangeFromCaster    = (Maths.Max(Maths.Min(verb.EffectiveRange, nearestEnemyDist) / 2f, 10f) * personality.cover) * Finder.P50;
-							request.wantCoverFromTarget   = true;
-							request.preferredCastPosition = !IsAIAutoControlled && Finder.Settings.LateralSpread_Enabled ? GetLateralSpreadPos(nearestEnemy) : null;
-							if (CastPositionFinder.TryFindCastPosition(request, out IntVec3 castCell) && castCell != selPos && ShouldMoveTo(castCell))
+							if (selPawn.mindState.enemyTarget == null)
 							{
-								StartOrQueueCoverJob(castCell, 0);
+								selPawn.mindState.enemyTarget = nearestEnemy;
 							}
+							if (ShouldShootNow())
+							{
+								StartWaitCombatJob(52);
+							}
+						}
+					}
+					else
+					{
+						if (bestEnemyVisibleNow)
+						{
+							if (selPawn.mindState.enemyTarget == null)
+							{
+								selPawn.mindState.enemyTarget = nearestEnemy;
+							}
+							// Try to find an optimal cast/cover position before shooting.
+							if (nearestEnemyDist > 6 * personality.cover)
+							{
+								CastPositionRequest request = new CastPositionRequest();
+								request.caster                = selPawn;
+								request.target                = nearestEnemy;
+								request.maxRangeFromTarget    = 9999;
+								request.verb                  = verb;
+								request.maxRangeFromCaster    = (Maths.Max(Maths.Min(verb.EffectiveRange, nearestEnemyDist) / 2f, 10f) * personality.cover) * Finder.P50;
+								request.wantCoverFromTarget   = true;
+								request.preferredCastPosition = !IsAIAutoControlled && Finder.Settings.LateralSpread_Enabled ? GetLateralSpreadPos(nearestEnemy) : null;
+								if (CastPositionFinder.TryFindCastPosition(request, out IntVec3 castCell) && castCell != selPos && ShouldMoveTo(castCell))
+								{
+									StartOrQueueCoverJob(castCell, 0);
+								}
+								else if (ShouldShootNow())
+								{
+									StartWaitCombatJob(52);
+								}
+							}
+							// Fallback: already close enough, just shoot.
 							else if (ShouldShootNow())
 							{
 								StartWaitCombatJob(52);
 							}
 						}
-						// Fallback: mech is already close enough, just shoot.
-						else if (ShouldShootNow())
+						// Find cover while the enemy approaches but isn't yet in sight.
+						else if (bestEnemyVisibleSoon)
 						{
-							StartWaitCombatJob(52);
-						}
-					}
-					// Find cover while the enemy approaches but isn't yet in sight.
-					else if (bestEnemyVisibleSoon)
-					{
-						progress = 512;
-						CoverPositionRequest request = new CoverPositionRequest();
-						request.caster             = selPawn;
-						request.verb               = verb;
-						request.target             = nearestEnemy;
-						request.maxRangeFromCaster = Maths.Min(verb.EffectiveRange, 10f) * personality.cover;
-						request.checkBlockChance   = true;
-						try
-						{
-							if (CoverPositionFinder.TryFindCoverPosition(request, out IntVec3 cell) && ShouldMoveTo(cell))
+							progress = 512;
+							CoverPositionRequest request = new CoverPositionRequest();
+							request.caster             = selPawn;
+							request.verb               = verb;
+							request.target             = nearestEnemy;
+							request.maxRangeFromCaster = Maths.Min(verb.EffectiveRange, 10f) * personality.cover;
+							request.checkBlockChance   = true;
+							try
 							{
-								StartOrQueueCoverJob(cell, 10);
+								if (CoverPositionFinder.TryFindCoverPosition(request, out IntVec3 cell) && ShouldMoveTo(cell))
+								{
+									StartOrQueueCoverJob(cell, 10);
+								}
+							}
+							catch (System.ArgumentOutOfRangeException ex)
+							{
+								Log.Error($"CoverPositionFinder.TryFindCoverPosition threw IndexOutOfRange for {selPawn} progress:{progress} \n{ex}");
 							}
 						}
-						catch (System.ArgumentOutOfRangeException ex)
+						// Flank or chase when no enemy is visible or approaching.
+						else
 						{
-							Log.Error($"CoverPositionFinder.TryFindCoverPosition threw IndexOutOfRange for {selPawn} progress:{progress} \n{ex}");
+							progress = 513;
+							TryFlankOrChase();
 						}
-					}
-					// Flank or chase when no enemy is visible or approaching.
-					else
-					{
-						progress = 513;
-						TryFlankOrChase();
 					}
 				}
 				else
@@ -1460,19 +1478,119 @@ namespace CombatAI.Comps
 			// For debugging and logging.
 			progress   = 206;
 			_bestEnemy = nearestEnemy;
-			if (!selPawn.mindState.MeleeThreatStillThreat || selPawn.stances?.stagger?.Staggered == false)
+			float distToEnemy = selPawn.DistanceTo_Fast(nearestEnemy);
+
+			// ── Helper: issue standard melee attack job ──────────────────────────
+			void IssueMeleeJob()
 			{
-				_last = 31;
-				Job job_melee = JobMaker.MakeJob(JobDefOf.AttackMelee, nearestEnemy);
-				job_melee.playerForced      = forcedTarget.IsValid;
-				job_melee.locomotionUrgency = LocomotionUrgency.Jog;
+				if (!selPawn.mindState.MeleeThreatStillThreat || selPawn.stances?.stagger?.Staggered == false)
+				{
+					_last = 31;
+					Job job_melee = JobMaker.MakeJob(JobDefOf.AttackMelee, nearestEnemy);
+					job_melee.playerForced      = forcedTarget.IsValid;
+					job_melee.locomotionUrgency = LocomotionUrgency.Jog;
+					if (!IsPerformingMeleeAnimation(selPawn))
+					{
+						selPawn.jobs.ClearQueuedJobs();
+						selPawn.jobs.StartJob(job_melee, JobCondition.InterruptForced);
+						data.LastInterrupted = GenTicks.TicksGame;
+					}
+				}
+			}
+
+			// ── Helper: issue a cover-advance movement job ───────────────────────
+			bool IssueMoveJob(IntVec3 cell, int lastCode)
+			{
+				if (cell == selPawn.Position || !IsMechanoidDestValid(cell)) return false;
+				_last = lastCode;
+				selPawn.mindState.enemyTarget = nearestEnemy;
+				Job job_goto = JobMaker.MakeJob(CombatAI_JobDefOf.CombatAI_Goto_Cover, cell);
+				job_goto.expiryInterval        = -1;
+				job_goto.checkOverrideOnExpire = false;
+				job_goto.playerForced          = forcedTarget.IsValid;
+				job_goto.locomotionUrgency     = Finder.Settings.Enable_Sprinting ? LocomotionUrgency.Sprint : LocomotionUrgency.Jog;
 				if (!IsPerformingMeleeAnimation(selPawn))
 				{
 					selPawn.jobs.ClearQueuedJobs();
-					selPawn.jobs.StartJob(job_melee, JobCondition.InterruptForced);
+					selPawn.jobs.StartJob(job_goto, JobCondition.InterruptForced);
 					data.LastInterrupted = GenTicks.TicksGame;
 				}
+				return true;
 			}
+
+			// Priority 1 — INTERCEPT: enemy is melee-attacking a ranged ally → charge immediately to protect
+			if (bestEnemyIsMeleeAttackingAlly)
+			{
+				IssueMeleeJob();
+				progress = 207;
+				return;
+			}
+
+			IntVec3 meleePos    = selPawn.Position;
+			IntVec3 meleeTarget = nearestEnemy.Position;
+
+			// Priority 2 — COUNT nearby enemies to detect crowd density
+			int nearbyEnemyCount = 0;
+			IEnumerator<AIEnvAgentInfo> densityEnum = data.EnemiesWhere(AIEnvAgentState.nearby);
+			while (densityEnum.MoveNext())
+			{
+				AIEnvAgentInfo di = densityEnum.Current;
+				if (di.thing?.Spawned == true && selPawn.DistanceTo_Fast(di.thing) < 5f)
+					nearbyEnemyCount++;
+			}
+			bool crowded = nearbyEnemyCount >= 3;
+
+			// Priority 3 — FLANK / SIDE APPROACH: avoid charging into a dense crowd or heavy crossfire
+			progress = 211;
+			if (crowded || rangedEnemiesTargetingSelf.Count >= 2)
+			{
+				float dx  = meleeTarget.x - meleePos.x;
+				float dz  = meleeTarget.z - meleePos.z;
+				float len = Mathf.Sqrt(dx * dx + dz * dz);
+				if (len > 2f)
+				{
+					float perpX      = -dz / len;
+					float perpZ      =  dx / len;
+					// Aim for a position beside the enemy, not in front of them
+					float sideOffset = Mathf.Clamp(distToEnemy * 0.4f, 3f, 8f);
+					for (int side = -1; side <= 1; side += 2)
+					{
+						IntVec3 flankCell = new IntVec3(
+							meleeTarget.x + Mathf.RoundToInt(perpX * side * sideOffset),
+							meleeTarget.y,
+							meleeTarget.z + Mathf.RoundToInt(perpZ * side * sideOffset));
+						if (flankCell.InBounds(selPawn.Map)
+							&& flankCell != meleePos
+							&& selPawn.CanReach(flankCell, PathEndMode.OnCell, Danger.Deadly))
+						{
+							if (IssueMoveJob(flankCell, 33))
+							{
+								progress = 207;
+								return;
+							}
+						}
+					}
+				}
+			}
+
+			// Priority 4 — COVER ADVANCE: when being shot while approaching, route through lower-threat cells
+			progress = 210;
+			if (distToEnemy > 12f && rangedEnemiesTargetingSelf.Count > 0
+				&& !selPawn.CurJob.Is(CombatAI_JobDefOf.CombatAI_Goto_Cover))
+			{
+				IntVec3 advanceCell = new IntVec3(
+					Mathf.RoundToInt(meleePos.x + (meleeTarget.x - meleePos.x) * 0.5f),
+					meleePos.y,
+					Mathf.RoundToInt(meleePos.z + (meleeTarget.z - meleePos.z) * 0.5f));
+				if (advanceCell.InBounds(selPawn.Map) && IssueMoveJob(advanceCell, 32))
+				{
+					progress = 207;
+					return;
+				}
+			}
+
+			// Priority 5 — FALLBACK: direct melee charge
+			IssueMeleeJob();
 			// For debugging and logging.
 			progress = 207;
 		}
