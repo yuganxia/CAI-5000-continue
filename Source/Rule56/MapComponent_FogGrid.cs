@@ -65,6 +65,15 @@ namespace CombatAI
 		private int                backgroundNextV;
 		public           WallGrid  walls;
 
+		private volatile bool[]    _indoorRoomCache; 
+		private volatile bool[]    _indoorProtectCache; 
+		private          int       _indoorCacheLastTick = -9999;
+		private const int          INDOOR_CACHE_REBUILD_INTERVAL = 120;
+		private          bool[]    _indoorCacheBuffer;
+		private          bool[]    _indoorExpandBuffer;
+		private          bool[]    _indoorProtectBuffer;
+		private          bool[]    _indoorProtectExpBuffer;
+
 
 		static MapComponent_FogGrid()
 		{
@@ -117,6 +126,7 @@ namespace CombatAI
 		{
 			base.FinalizeInit();
 			asyncActions.Start();
+			map.events.RegionsRoomsChanged += OnRegionsRoomsChanged;
 		}
 
 		public override void ExposeData()
@@ -184,6 +194,12 @@ namespace CombatAI
 			if (Finder.Settings.FogOfWar_DisableOnPlayerMap && map.IsPlayerHome)
 			{
 				return map.fogGrid?.IsFogged(index) ?? false;
+			}
+			if (map.IsPlayerHome)
+			{
+				bool[] cache = _indoorRoomCache;
+				if (cache != null && index >= 0 && index < cache.Length && cache[index])
+					return false;
 			}
 			if (index >= 0 && index < cellIndices.NumGridCells)
 			{
@@ -459,6 +475,143 @@ namespace CombatAI
 			}
 			catch { }
 		}
+		private void OnRegionsRoomsChanged()
+		{
+			if (!map.IsPlayerHome) return;
+			_indoorCacheLastTick = -9999;
+			try
+			{
+				int mapSizeX  = map.Size.x;
+				int mapSizeZ  = map.Size.z;
+				RegionGrid rg = map.regionGrid;
+				int[] dx = { -1, 0, 1, -1, 1, -1, 0, 1 };
+				int[] dz = { -1, -1, -1, 0, 0, 1, 1, 1 };
+
+				void ClearCAICell(int idx, IntVec3 cell)
+				{
+					if ((uint)idx >= (uint)fogState.Length) return;
+					if (fogState[idx] != CellFogState.CAIFogged) return;
+					fogState[idx] = CellFogState.VanillaExplored;
+					WriteNativeFogBit(idx, false);
+					map.mapDrawer.MapMeshDirty(cell, MapMeshFlagDefOf.FogOfWar | MapMeshFlagDefOf.Things);
+				}
+
+				foreach (Room room in map.regionAndRoomUpdater.roomLookup.Values)
+				{
+					if (!room.ProperRoom || room.Dereferenced) continue;
+
+					bool roomHasUnexplored = false;
+					foreach (IntVec3 cell in room.Cells)
+					{
+						int idx = cellIndices.CellToIndex(cell);
+						if ((uint)idx < (uint)fogState.Length && fogState[idx] == CellFogState.VanillaUnexplored)
+						{
+							roomHasUnexplored = true;
+							break;
+						}
+					}
+					if (roomHasUnexplored) continue;
+					foreach (IntVec3 cell in room.Cells)
+					{
+						int idx = cellIndices.CellToIndex(cell);
+						ClearCAICell(idx, cell);
+						int cx = cell.x; int cz = cell.z;
+						for (int d = 0; d < 8; d++)
+						{
+							int nx = cx + dx[d]; int nz = cz + dz[d];
+							if ((uint)nx >= (uint)mapSizeX || (uint)nz >= (uint)mapSizeZ) continue;
+							int ni = nz * mapSizeX + nx;
+							Region nReg = rg.GetValidRegionAt_NoRebuild(new IntVec3(nx, 0, nz));
+							if (nReg != null && nReg.type != RegionType.Portal && (nReg.Room == null || !nReg.Room.ProperRoom)) continue;
+							ClearCAICell(ni, new IntVec3(nx, 0, nz));
+						}
+					}
+				}
+			}
+			catch { }
+		}
+
+		private void RebuildIndoorRoomCache()
+		{
+			if (map == null) return;
+			int count    = cellIndices.NumGridCells;
+			int mapSizeX = map.Size.x;
+			int mapSizeZ = map.Size.z;
+
+			if (_indoorCacheBuffer == null || _indoorCacheBuffer.Length != count)
+				_indoorCacheBuffer = new bool[count];
+			if (_indoorExpandBuffer == null || _indoorExpandBuffer.Length != count)
+				_indoorExpandBuffer = new bool[count];
+			if (_indoorProtectBuffer == null || _indoorProtectBuffer.Length != count)
+				_indoorProtectBuffer = new bool[count];
+			if (_indoorProtectExpBuffer == null || _indoorProtectExpBuffer.Length != count)
+				_indoorProtectExpBuffer = new bool[count];
+
+			bool[] cache      = _indoorCacheBuffer;
+			bool[] expanded   = _indoorExpandBuffer;
+			bool[] protect    = _indoorProtectBuffer;
+			bool[] protectExp = _indoorProtectExpBuffer;
+
+			System.Array.Clear(cache, 0, count);
+			System.Array.Clear(expanded, 0, count);
+			System.Array.Clear(protect, 0, count);
+			System.Array.Clear(protectExp, 0, count);
+
+			foreach (Room room in map.regionAndRoomUpdater.roomLookup.Values)
+			{
+				if (!room.ProperRoom || room.Dereferenced) continue;
+
+				bool hasUnexplored = false;
+				foreach (IntVec3 cell in room.Cells)
+				{
+					int idx = cellIndices.CellToIndex(cell);
+					if ((uint)idx < (uint)count && fogState[idx] == CellFogState.VanillaUnexplored)
+					{
+						hasUnexplored = true;
+						break;
+					}
+				}
+				if (hasUnexplored) continue;
+				foreach (IntVec3 cell in room.Cells)
+				{
+					int idx = cellIndices.CellToIndex(cell);
+					if ((uint)idx < (uint)count)
+					{
+						protect[idx] = true;
+						cache[idx] = true;
+					}
+				}
+			}
+			System.Array.Copy(cache, expanded, count);
+			System.Array.Copy(protect, protectExp, count);
+			RegionGrid regionGrid = map.regionGrid;
+			int[] dx = { -1, 0, 1, -1, 1, -1, 0, 1 };
+			int[] dz = { -1, -1, -1, 0, 0, 1, 1, 1 };
+			for (int i = 0; i < count; i++)
+			{
+				bool doVis = cache[i];
+				bool doPro = protect[i];
+				if (!doVis && !doPro) continue;
+				int cx = i % mapSizeX;
+				int cz = i / mapSizeX;
+				for (int d = 0; d < 8; d++)
+				{
+					int nx = cx + dx[d]; int nz = cz + dz[d];
+					if ((uint)nx >= (uint)mapSizeX || (uint)nz >= (uint)mapSizeZ) continue;
+					int ni = nz * mapSizeX + nx;
+					Region nRegion = regionGrid.GetValidRegionAt_NoRebuild(new IntVec3(nx, 0, nz));
+					if (nRegion != null && nRegion.type != RegionType.Portal && (nRegion.Room == null || !nRegion.Room.ProperRoom)) continue;
+					if (doVis && !expanded[ni])   expanded[ni]   = true;
+					if (doPro && !protectExp[ni]) protectExp[ni] = true;
+				}
+			}
+			_indoorRoomCache        = expanded;
+			_indoorProtectCache     = protectExp;
+			_indoorExpandBuffer     = cache;
+			_indoorCacheBuffer      = expanded;
+			_indoorProtectExpBuffer = protect;
+			_indoorProtectBuffer    = protectExp;
+		}
 
 		private void InitializeFogStateFromVanilla()
 		{
@@ -589,6 +742,11 @@ namespace CombatAI
 				screenMaxU = Mathf.FloorToInt(mapScreenRect.xMax / SECTION_SIZE);
 				screenMaxV = Mathf.FloorToInt(mapScreenRect.yMax / SECTION_SIZE);
 				//mapScreenRect.ExpandedBy(32, 32);
+				if (map.IsPlayerHome && ticksGame - _indoorCacheLastTick >= INDOOR_CACHE_REBUILD_INTERVAL)
+				{
+					_indoorCacheLastTick = ticksGame;
+					RebuildIndoorRoomCache();
+				}
 				asyncActions.ExecuteMainThreadActions();
 				DrawFog(Mathf.FloorToInt(mapScreenRect.xMin / SECTION_SIZE), Mathf.FloorToInt(mapScreenRect.yMin / SECTION_SIZE), Mathf.FloorToInt(mapScreenRect.xMax / SECTION_SIZE), Mathf.FloorToInt(mapScreenRect.yMax / SECTION_SIZE));
 			}
@@ -610,6 +768,7 @@ namespace CombatAI
 		{
 			// restore any modified vanilla fog before removing
 			RestoreAllAppliedWarFog();
+			map.events.RegionsRoomsChanged -= OnRegionsRoomsChanged;
 			alive = false;
 			asyncActions.Kill();
 			base.MapRemoved();
@@ -809,8 +968,19 @@ namespace CombatAI
 				void SetCell(int x, int z, float glowOffset, float visibilityOffset, bool allowLowerValues)
 				{
                         int index = indices.CellToIndex(loc = pos + new IntVec3(x, 0, z));
-					if (index >= 0 && index < numGridCells)
+
+				{
+					bool[] indoorCache = comp._indoorRoomCache;
+					if (indoorCache != null && index >= 0 && index < indoorCache.Length && indoorCache[index])
 					{
+						cells[x * SECTION_SIZE + z] = 0f;
+						if (comp.fogState[index] == CellFogState.CAIFogged)
+							comp.fogState[index] = CellFogState.VanillaExplored;
+						return;
+					}
+				}
+				if (index >= 0 && index < numGridCells)
+				{
                         	float old           = cells[x * SECTION_SIZE + z];
                         	bool  isWall        = walls != null && !walls.CanBeSeenOver(index);
 						float visRLimit     = 0;
@@ -845,7 +1015,12 @@ namespace CombatAI
 							if (newFog)
 							{
 								if (prevState == CellFogState.VanillaExplored)
-									comp.fogState[index] = CellFogState.CAIFogged;
+								{
+									// 三相状态机：ProperRoom 格子禁止 CAI 生成迷雾
+									bool[] protect = comp._indoorProtectCache;
+									if (protect == null || (uint)index >= (uint)protect.Length || !protect[index])
+										comp.fogState[index] = CellFogState.CAIFogged;
+								}
 							}
 							else
 							{
