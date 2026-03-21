@@ -64,6 +64,7 @@
     <CombatAI.Settings.Basic.Caster>Enable fire position tweaks</CombatAI.Settings.Basic.Caster>
     <CombatAI.Settings.Basic.Targeter>Enable target selection tweaks</CombatAI.Settings.Basic.Targeter>
     <CombatAI.Settings.Basic.Flanking>Enable aggressive flanking</CombatAI.Settings.Basic.Flanking>
+    <CombatAI.Settings.Basic.LateralSpread>Enable lateral spread</CombatAI.Settings.Basic.LateralSpread>
     <CombatAI.Settings.Basic.Reaction>Enable fast reactions</CombatAI.Settings.Basic.Reaction>
     <CombatAI.Settings.Basic.Retreat>Enable tactical retreat</CombatAI.Settings.Basic.Retreat>
     <CombatAI.Settings.Basic.Pather>Enable pathfinding tweaks</CombatAI.Settings.Basic.Pather>

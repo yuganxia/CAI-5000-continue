@@ -36,6 +36,7 @@ namespace CombatAI
                     Finder.Settings.Targeter_Enabled       = false;
                     Finder.Settings.PerformanceOpt_Enabled = true;
                     Finder.Settings.Flank_Enabled          = false;
+                    Finder.Settings.LateralSpread_Enabled  = false;
                     Finder.Settings.Enable_Sprinting           = false;
                     Finder.Settings.Enable_Groups              = false;
                     Finder.Settings.Pathfinding_SappingMul     = 1.5f;
@@ -81,6 +82,7 @@ namespace CombatAI
                     Finder.Settings.Targeter_Enabled                            = true;
                     Finder.Settings.PerformanceOpt_Enabled                      = true;
                     Finder.Settings.Flank_Enabled                               = true;
+                    Finder.Settings.LateralSpread_Enabled                        = true;
                     Finder.Settings.Enable_Sprinting                            = false;
                     Finder.Settings.Enable_Groups                               = true;
                     Finder.Settings.Pathfinding_SappingMul                      = 1.3f;
@@ -124,6 +126,7 @@ namespace CombatAI
                     }
                     Finder.Settings.Targeter_Enabled       = true;
                     Finder.Settings.Flank_Enabled          = true;
+                    Finder.Settings.LateralSpread_Enabled  = true;
                     Finder.Settings.PerformanceOpt_Enabled = true;
 
                     Finder.Settings.Enable_Sprinting                            = false;
@@ -171,6 +174,7 @@ namespace CombatAI
 		                }
 	                }
                     Finder.Settings.Flank_Enabled          = true;
+                    Finder.Settings.LateralSpread_Enabled  = true;
                     Finder.Settings.PerformanceOpt_Enabled = false;
 
                     Finder.Settings.Enable_Sprinting                            = true;

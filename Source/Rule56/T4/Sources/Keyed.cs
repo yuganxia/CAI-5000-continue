@@ -759,6 +759,17 @@ namespace CombatAI.R
                    _CombatAI_Settings_Basic_Flanking : _CombatAI_Settings_Basic_Flanking = "CombatAI.Settings.Basic.Flanking".Translate();
         }
 
+        private static TaggedString _CombatAI_Settings_Basic_LateralSpread = null;
+        /// <summary> Keyed string. key=<c>CombatAI.Settings.Basic.LateralSpread</c>. inner text:
+        ///
+        /// <code>Enable lateral spread</code>
+        /// </summary>       
+        public static TaggedString CombatAI_Settings_Basic_LateralSpread
+        {
+            get => _CombatAI_Settings_Basic_LateralSpread != null ?
+                   _CombatAI_Settings_Basic_LateralSpread : _CombatAI_Settings_Basic_LateralSpread = "CombatAI.Settings.Basic.LateralSpread".Translate();
+        }
+
         private static TaggedString _CombatAI_Settings_Basic_Reaction = null;
         /// <summary> Keyed string. key=<c>CombatAI.Settings.Basic.Reaction</c>. inner text:
         ///

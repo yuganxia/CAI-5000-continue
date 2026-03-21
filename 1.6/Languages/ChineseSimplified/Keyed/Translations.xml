@@ -64,6 +64,7 @@
     <CombatAI.Settings.Basic.Caster>启用火力位置调整</CombatAI.Settings.Basic.Caster>
     <CombatAI.Settings.Basic.Targeter>启用目标选择调整</CombatAI.Settings.Basic.Targeter>
     <CombatAI.Settings.Basic.Flanking>启用积极侧翼攻击</CombatAI.Settings.Basic.Flanking>
+    <CombatAI.Settings.Basic.LateralSpread>启用横向分散进攻</CombatAI.Settings.Basic.LateralSpread>
     <CombatAI.Settings.Basic.Reaction>启用快速反应</CombatAI.Settings.Basic.Reaction>
     <CombatAI.Settings.Basic.Retreat>启用战术撤退</CombatAI.Settings.Basic.Retreat>
     <CombatAI.Settings.Basic.Pather>启用路径寻找调整</CombatAI.Settings.Basic.Pather>

@@ -49,6 +49,7 @@ namespace CombatAI
 
         public bool Enable_Sprinting          = true;
         public bool Flank_Enabled             = true;
+        public bool LateralSpread_Enabled     = true;
         public bool FogOfWar_Allies           = true;
         public bool FogOfWar_Animals          = true;
         public bool FogOfWar_AnimalsSmartOnly = true;
@@ -191,6 +192,7 @@ namespace CombatAI
             Scribe_Values.Look(ref Caster_Enabled, $"Caster_Enabled.{version}", true);
             Scribe_Values.Look(ref Targeter_Enabled, $"Targeter_Enabled.{version}", true);
             Scribe_Values.Look(ref Flank_Enabled, $"Flank_Enabled.{version}", true);
+            Scribe_Values.Look(ref LateralSpread_Enabled, $"LateralSpread_Enabled.{version}", true);
             Scribe_Values.Look(ref Pathfinding_DestWeight, $"Pathfinding_DestWeight.{version}", 0.85f);
             Scribe_Values.Look(ref Pathfinding_SquadPathWidth, $"Pathfinding_SquadPathWidth.{version}", 4);
             Scribe_Values.Look(ref AdvancedUser, $"AdvancedUser.{version}");

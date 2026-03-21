@@ -1057,6 +1057,8 @@ namespace CombatAI.Comps
 
 			void TryFlankOrChase()
 			{
+				if (!Finder.Settings.Flank_Enabled)
+					return;
 				if (TryGetFlankTarget(verb, selFlags, out Thing flankTarget, out IntVec3 flankCell))
 				{
 					_bestEnemy = flankTarget;
@@ -1177,7 +1179,7 @@ namespace CombatAI.Comps
 							request.verb                  = verb;
 							request.maxRangeFromCaster    = (Maths.Max(Maths.Min(verb.EffectiveRange, nearestEnemyDist) / 2f, 10f) * personality.cover) * Finder.P50;
 							request.wantCoverFromTarget   = true;
-							request.preferredCastPosition = !IsAIAutoControlled ? GetLateralSpreadPos(nearestEnemy) : null;
+							request.preferredCastPosition = !IsAIAutoControlled && Finder.Settings.LateralSpread_Enabled ? GetLateralSpreadPos(nearestEnemy) : null;
 							if (CastPositionFinder.TryFindCastPosition(request, out IntVec3 castCell) && castCell != selPos && ShouldMoveTo(castCell))
 							{
 								StartOrQueueCoverJob(castCell, 0);
@@ -1267,7 +1269,7 @@ namespace CombatAI.Comps
 							request.verb                  = verb;
 							request.maxRangeFromCaster    = (Maths.Max(Maths.Min(verb.EffectiveRange, nearestEnemyDist) / 2f, 10f) * personality.cover + distOffset) * Finder.P50;
 							request.wantCoverFromTarget   = true;
-							request.preferredCastPosition = !IsAIAutoControlled ? GetLateralSpreadPos(nearestEnemy) : null;
+							request.preferredCastPosition = !IsAIAutoControlled && Finder.Settings.LateralSpread_Enabled ? GetLateralSpreadPos(nearestEnemy) : null;
 							if (CastPositionFinder.TryFindCastPosition(request, out IntVec3 cell) && cell != selPos && (ShouldMoveTo(cell) || Rand.Chance(moveBias)))
 							{
 								StartOrQueueCoverJob(cell, 0);
