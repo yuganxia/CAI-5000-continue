@@ -13,6 +13,10 @@
     <CombatAI.DefKindSettings.Selected>Selected</CombatAI.DefKindSettings.Selected>
     <CombatAI.Gizmos.AutoControl>CAI Auto-Control</CombatAI.Gizmos.AutoControl>
     <CombatAI.Gizmos.AutoControl.Desc>Let Combat AI automatically control this colonist in combat. When drafted, CAI will seek cover, kite enemies, and pursue targets intelligently.</CombatAI.Gizmos.AutoControl.Desc>
+    <CombatAI.Gizmos.SearchDestroy.Melee>CAI Melee Pursuit</CombatAI.Gizmos.SearchDestroy.Melee>
+    <CombatAI.Gizmos.SearchDestroy.Melee.Desc>Enable Search &amp; Destroy mode. When Auto-Control is active, this pawn will actively pursue enemies outside CAI's sight coverage and rush to melee range.</CombatAI.Gizmos.SearchDestroy.Melee.Desc>
+    <CombatAI.Gizmos.SearchDestroy.Ranged>CAI Ranged Pursuit</CombatAI.Gizmos.SearchDestroy.Ranged>
+    <CombatAI.Gizmos.SearchDestroy.Ranged.Desc>Enable Search &amp; Destroy mode. When Auto-Control is active, this pawn will actively pursue enemies outside CAI's sight coverage and move into weapon range to engage.</CombatAI.Gizmos.SearchDestroy.Ranged.Desc>
     <CombatAI.Quick.Welcome.Description>This quick-setup page will help you quickly setup CAI-5000's different features!</CombatAI.Quick.Welcome.Description>
     <CombatAI.Quick.QuickSetup>Quick Setup Options</CombatAI.Quick.QuickSetup>
     <CombatAI.Quick.Difficulty>Please select a difficulty level</CombatAI.Quick.Difficulty>

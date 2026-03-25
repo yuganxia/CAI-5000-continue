@@ -13,6 +13,10 @@
     <CombatAI.DefKindSettings.Selected>已选择</CombatAI.DefKindSettings.Selected>
     <CombatAI.Gizmos.AutoControl>CAI 自动控制</CombatAI.Gizmos.AutoControl>
     <CombatAI.Gizmos.AutoControl.Desc>让战斗 AI 在战斗中自动控制该殖民者。当被征召时，CAI 将寻找掩护、牵制敌人并智能地追击目标。</CombatAI.Gizmos.AutoControl.Desc>
+    <CombatAI.Gizmos.SearchDestroy.Melee>CAI 近战追击</CombatAI.Gizmos.SearchDestroy.Melee>
+    <CombatAI.Gizmos.SearchDestroy.Melee.Desc>启用搜索与摧毁模式。自动控制开启时，该小人将主动追击 CAI 视野覆盖范围外的敌人，冲至近战接触距离。</CombatAI.Gizmos.SearchDestroy.Melee.Desc>
+    <CombatAI.Gizmos.SearchDestroy.Ranged>CAI 远程追击</CombatAI.Gizmos.SearchDestroy.Ranged>
+    <CombatAI.Gizmos.SearchDestroy.Ranged.Desc>启用搜索与摧毁模式。自动控制开启时，该小人将主动追击 CAI 视野覆盖范围外的敌人，移动至武器射程内以使用远程火力。</CombatAI.Gizmos.SearchDestroy.Ranged.Desc>
     <CombatAI.Quick.Welcome.Description>此快速设置页面将帮助您快速设置 CAI-5000 的不同功能！</CombatAI.Quick.Welcome.Description>
     <CombatAI.Quick.QuickSetup>快速设置选项</CombatAI.Quick.QuickSetup>
     <CombatAI.Quick.Difficulty>请选择难度等级</CombatAI.Quick.Difficulty>
