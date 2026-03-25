@@ -1,6 +1,0 @@
-D:\rim\RimWorld\Mods\CAI-5000-main\Source\Rule56\obj\Release\CombatAI.csproj.AssemblyReference.cache
-D:\rim\RimWorld\Mods\CAI-5000-main\Source\Rule56\obj\Release\CombatAI.GeneratedMSBuildEditorConfig.editorconfig
-D:\rim\RimWorld\Mods\CAI-5000-main\Source\Rule56\obj\Release\CombatAI.csproj.CoreCompileInputs.cache
-D:\rim\RimWorld\Mods\CAI-5000-main\Source\Rule56\obj\Release\CombatAI.sourcelink.json
-D:\rim\RimWorld\Mods\CAI-5000-main\Source\Rule56\obj\Release\CombatAI.dll
-D:\rim\RimWorld\Mods\CAI-5000-main\Source\Rule56\obj\Release\CombatAI.pdb
