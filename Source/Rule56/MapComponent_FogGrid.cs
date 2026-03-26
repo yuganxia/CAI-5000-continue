@@ -65,6 +65,7 @@ namespace CombatAI
 		private int                backgroundNextV;
 		public           WallGrid  walls;
 
+		private volatile bool      _cachedIsPlayerHome;
 		private volatile bool[]    _indoorRoomCache; 
 		private volatile bool[]    _indoorProtectCache; 
 		private          int       _indoorCacheLastTick = -9999;
@@ -191,11 +192,12 @@ namespace CombatAI
 			{
 				return false;
 			}
-			if (Finder.Settings.FogOfWar_DisableOnPlayerMap && map.IsPlayerHome)
+			bool isPlayerHome = _cachedIsPlayerHome;
+			if (Finder.Settings.FogOfWar_DisableOnPlayerMap && isPlayerHome)
 			{
 				return map.fogGrid?.IsFogged(index) ?? false;
 			}
-			if (map.IsPlayerHome)
+			if (isPlayerHome)
 			{
 				if (Finder.Settings.FogOfWar_IndoorVisible)
 				{
@@ -663,6 +665,8 @@ namespace CombatAI
 
 		public override void MapComponentUpdate()
 		{
+			// Cache map.IsPlayerHome on main thread so off-thread code can safely read it.
+			try { _cachedIsPlayerHome = map.IsPlayerHome; } catch { }
 			if (Finder.Settings.FogOfWar_Enabled && !previousFogEnabled)
 			{
 				previousFogEnabled = true;
@@ -963,7 +967,7 @@ namespace CombatAI
 				CellIndices indices = indicesNullable.Value;
 				int         numGridCells = indices.NumGridCells;
 				WallGrid    walls        = comp.walls;
-				ITFloatGrid fogGrid      = comp.sight.gridFog;
+				ITFloatGrid fogGrid      = comp.sight?.gridFog;
 				IntVec3     pos          = this.pos.ToIntVec3();
 				IntVec3     loc;
 

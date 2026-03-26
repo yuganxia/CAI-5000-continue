@@ -321,6 +321,7 @@ namespace CombatAI
 			WallGrid walls = map.GetComp_Fast<WallGrid>();
 			asyncActions.EnqueueOffThreadAction(() =>
 			{
+				if (walls == null) return;
 				path.Next();
 				path_squads.Next();
 				IntVec3 prev = cells[0];
