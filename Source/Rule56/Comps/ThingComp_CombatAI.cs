@@ -87,9 +87,13 @@ namespace CombatAI.Comps
         /// </summary>
         public bool aiAutoControl = false;
         /// <summary>
-        ///     Whether this AutoControl pawn should actively pursue enemies outside CAI's current sight coverage (Search and Destroy).
+        ///     Whether this AutoControl ranged pawn should actively pursue enemies outside CAI's current sight coverage (Search and Destroy).
         /// </summary>
         public bool aiSearchAndDestroy = false;
+        /// <summary>
+        ///     Whether this AutoControl melee pawn should actively pursue enemies outside CAI's current sight coverage (Search and Destroy).
+        /// </summary>
+        public bool aiSearchAndDestroyMelee = false;
         /// <summary>
         ///     Sapper timestamp
         /// </summary>
@@ -384,7 +388,8 @@ namespace CombatAI.Comps
         /// <returns>True if a pursuit job was issued.</returns>
         private bool TrySearchAndDestroy()
         {
-            if (!IsAIAutoControlled || !aiSearchAndDestroy) return false;
+            bool isMelee = selPawn.CurrentEffectiveVerb?.IsMeleeAttack ?? (selPawn.equipment?.Primary == null || selPawn.equipment.Primary.def.IsMeleeWeapon);
+            if (!IsAIAutoControlled || !(isMelee ? aiSearchAndDestroyMelee : aiSearchAndDestroy)) return false;
             if (IsPlayerOverriding) return false;
             Map map = selPawn.Map;
             if (map == null) return false;
@@ -633,10 +638,11 @@ namespace CombatAI.Comps
             {
                 return;
             }
-            // Clear Search and Destroy flag when the pawn is no longer drafted.
-            if (!selPawn.Drafted && aiSearchAndDestroy)
+            // Clear Search and Destroy flags when the pawn is no longer drafted.
+            if (!selPawn.Drafted)
             {
-                aiSearchAndDestroy = false;
+                aiSearchAndDestroy       = false;
+                aiSearchAndDestroyMelee  = false;
             }
             if (aggroTicks > 0)
             {
@@ -816,7 +822,7 @@ namespace CombatAI.Comps
             if (data.NumEnemies == 0 && targetedBy.Count == 0)
             {
                 // Search and Destroy: pursue enemies outside CAI's current sight coverage.
-                if (IsAIAutoControlled && aiSearchAndDestroy)
+                if (IsAIAutoControlled && (aiSearchAndDestroy || aiSearchAndDestroyMelee))
                 {
                     if (!TrySearchAndDestroy())
                     {
@@ -946,9 +952,46 @@ namespace CombatAI.Comps
                 {
                     return;
                 }
-            // if CE is active skip reaction if the pawn is reloading or hunkering down.
-            if (Mod_CE.active && (selPawn.CurJobDef.Is(Mod_CE.ReloadWeapon) || selPawn.CurJobDef.Is(Mod_CE.HunkerDown)))
+            // if CE is active skip reaction if the pawn is hunkering down.
+            if (Mod_CE.active && selPawn.CurJobDef.Is(Mod_CE.HunkerDown))
             {
+                return;
+            }
+            if (Mod_CE.active && selPawn.CurJobDef.Is(Mod_CE.ReloadWeapon))
+            {
+                if (rangedEnemiesTargetingSelf.Count > 0 && GenTicks.TicksGame - lastCEReloadCoverTick > 500)
+                {
+                    CoverPositionRequest request = new CoverPositionRequest();
+                    request.caster             = selPawn;
+                    request.target             = rangedEnemiesTargetingSelf[0];
+                    request.verb               = verb;
+                    request.majorThreats       = new List<Thing>(rangedEnemiesTargetingSelf);
+                    request.checkBlockChance   = true;
+                    request.maxRangeFromCaster = Mathf.Clamp(verb.EffectiveRange * 0.3f, 6f, 14f);
+                    IntVec3 cell  = default;
+                    bool    found = false;
+                    try { found = CoverPositionFinder.TryFindCoverPosition(request, out cell); }
+                    catch (System.ArgumentOutOfRangeException) { cell = default; found = false; }
+                    if (found && cell != selPos && IsMechanoidDestValid(cell) && !IsPerformingMeleeAnimation(selPawn))
+                    {
+                        _bestEnemy            = rangedEnemiesTargetingSelf[0];
+                        lastCEReloadCoverTick = GenTicks.TicksGame;
+                        Job job_goto = JobMaker.MakeJob(CombatAI_JobDefOf.CombatAI_Goto_Cover, cell);
+                        job_goto.expiryInterval        = -1;
+                        job_goto.checkOverrideOnExpire = false;
+                        job_goto.playerForced          = forcedTarget.IsValid;
+                        job_goto.locomotionUrgency     = Finder.Settings.Enable_Sprinting ? LocomotionUrgency.Sprint : LocomotionUrgency.Jog;
+                        // Queue Wait_Combat after arrival so CE's reload ThinkNode fires when
+                        // the pawn tries to shoot and finds the weapon still needs ammo.
+                        Job job_wait = JobMaker.MakeJob(JobDefOf.Wait_Combat, Rand.Int % 150 + 200);
+                        job_wait.playerForced                   = forcedTarget.IsValid;
+                        job_wait.endIfCantShootTargetFromCurPos = true;
+                        job_wait.checkOverrideOnExpire          = true;
+                        selPawn.jobs.ClearQueuedJobs();
+                        selPawn.jobs.StartJob(job_goto, JobCondition.InterruptForced);
+                        selPawn.jobs.jobQueue.EnqueueFirst(job_wait);
+                    }
+                }
                 return;
             }
             // For debugging and logging.
@@ -2220,7 +2263,8 @@ namespace CombatAI.Comps
                             // Also clear S&D mode when AutoControl is turned off.
                             if (!newVal)
                             {
-                                comp.aiSearchAndDestroy = false;
+                                comp.aiSearchAndDestroy      = false;
+                                comp.aiSearchAndDestroyMelee = false;
                             }
                         }
                     }
@@ -2228,63 +2272,113 @@ namespace CombatAI.Comps
                 };
                     yield return autoControlToggle;
                     // S&D gizmos: only visible while AutoControl is active.
+                    // Only the first AC pawn in the selection emits the SD gizmos to avoid
+                    // duplicates when multiple AutoControl pawns are selected at once.
                     if (IsAIAutoControlled)
                     {
-                        bool isPrimarilyMelee   = selPawn.equipment?.Primary == null
-                            || selPawn.equipment.Primary.def.IsMeleeWeapon;
-                        Command_Toggle sdToggle = new Command_Toggle();
-                        sdToggle.defaultLabel   = isPrimarilyMelee
-                            ? "CombatAI.Gizmos.SearchDestroy.Melee".Translate()
-                            : "CombatAI.Gizmos.SearchDestroy.Ranged".Translate();
-                        sdToggle.defaultDesc    = isPrimarilyMelee
-                            ? "CombatAI.Gizmos.SearchDestroy.Melee.Desc".Translate()
-                            : "CombatAI.Gizmos.SearchDestroy.Ranged.Desc".Translate();
-                        sdToggle.icon           = TexCommand.Attack;
-                        sdToggle.groupable      = false;
-                        sdToggle.isActive = () =>
+                        bool isFirstACPawnInSelection =
+                            Find.Selector.SelectedPawns.FirstOrDefault(p =>
+                                (p.IsColonist || (p.RaceProps.IsMechanoid && p.Faction != null && p.Faction.IsPlayerSafe()))
+                                && p.Drafted && (p.AI()?.IsAIAutoControlled ?? false)) == selPawn;
+
+                        if (isFirstACPawnInSelection)
                         {
-                            foreach (Pawn pawn in Find.Selector.SelectedPawns)
+                            // Determine which weapon-type categories are present among selected AC pawns.
+                            bool anyRangedAC = false;
+                            bool anyMeleeAC  = false;
+                            foreach (Pawn p in Find.Selector.SelectedPawns)
                             {
-                                if ((pawn.IsColonist || (pawn.RaceProps.IsMechanoid && pawn.Faction != null && pawn.Faction.IsPlayerSafe())) && pawn.Drafted)
-                                {
-                                    ThingComp_CombatAI comp = pawn.AI();
-                                    if (comp != null && comp.aiSearchAndDestroy)
-                                    {
-                                        return true;
-                                    }
-                                }
+                                if (!(p.IsColonist || (p.RaceProps.IsMechanoid && p.Faction != null && p.Faction.IsPlayerSafe()))
+                                    || !p.Drafted) continue;
+                                ThingComp_CombatAI c = p.AI();
+                                if (c == null || !c.IsAIAutoControlled) continue;
+                                bool pMelee = p.equipment?.Primary == null || p.equipment.Primary.def.IsMeleeWeapon;
+                                if (pMelee) anyMeleeAC  = true;
+                                else        anyRangedAC = true;
                             }
-                            return false;
-                        };
-                        sdToggle.toggleAction = () =>
-                        {
-                            bool anySDEnabled = false;
-                            foreach (Pawn pawn in Find.Selector.SelectedPawns)
+
+                            // ---- Ranged S&D toggle ----
+                            if (anyRangedAC)
                             {
-                                if ((pawn.IsColonist || (pawn.RaceProps.IsMechanoid && pawn.Faction != null && pawn.Faction.IsPlayerSafe())) && pawn.Drafted)
+                                Command_Toggle sdRanged = new Command_Toggle();
+                                sdRanged.defaultLabel = "CombatAI.Gizmos.SearchDestroy.Ranged".Translate();
+                                sdRanged.defaultDesc  = "CombatAI.Gizmos.SearchDestroy.Ranged.Desc".Translate();
+                                sdRanged.icon         = TexCommand.Attack;
+                                sdRanged.groupable    = false;
+                                sdRanged.isActive = () =>
                                 {
-                                    ThingComp_CombatAI comp = pawn.AI();
-                                    if (comp != null && comp.aiSearchAndDestroy)
+                                    foreach (Pawn pawn in Find.Selector.SelectedPawns)
                                     {
-                                        anySDEnabled = true;
-                                        break;
+                                        if (!(pawn.IsColonist || (pawn.RaceProps.IsMechanoid && pawn.Faction != null && pawn.Faction.IsPlayerSafe())) || !pawn.Drafted) continue;
+                                        if (pawn.equipment?.Primary == null || pawn.equipment.Primary.def.IsMeleeWeapon) continue;
+                                        ThingComp_CombatAI comp = pawn.AI();
+                                        if (comp != null && comp.aiSearchAndDestroy) return true;
                                     }
-                                }
+                                    return false;
+                                };
+                                sdRanged.toggleAction = () =>
+                                {
+                                    bool anyOn = false;
+                                    foreach (Pawn pawn in Find.Selector.SelectedPawns)
+                                    {
+                                        if (!(pawn.IsColonist || (pawn.RaceProps.IsMechanoid && pawn.Faction != null && pawn.Faction.IsPlayerSafe())) || !pawn.Drafted) continue;
+                                        if (pawn.equipment?.Primary == null || pawn.equipment.Primary.def.IsMeleeWeapon) continue;
+                                        ThingComp_CombatAI comp = pawn.AI();
+                                        if (comp != null && comp.aiSearchAndDestroy) { anyOn = true; break; }
+                                    }
+                                    bool newVal = !anyOn;
+                                    foreach (Pawn pawn in Find.Selector.SelectedPawns)
+                                    {
+                                        if (!(pawn.IsColonist || (pawn.RaceProps.IsMechanoid && pawn.Faction != null && pawn.Faction.IsPlayerSafe()))) continue;
+                                        if (pawn.equipment?.Primary == null || pawn.equipment.Primary.def.IsMeleeWeapon) continue;
+                                        ThingComp_CombatAI comp = pawn.AI();
+                                        if (comp != null && comp.IsAIAutoControlled) comp.aiSearchAndDestroy = newVal;
+                                    }
+                                };
+                                yield return sdRanged;
                             }
-                            bool newSDVal = !anySDEnabled;
-                            foreach (Pawn pawn in Find.Selector.SelectedPawns)
+
+                            // ---- Melee S&D toggle (fist icon) ----
+                            if (anyMeleeAC)
                             {
-                                if (pawn.IsColonist || (pawn.RaceProps.IsMechanoid && pawn.Faction != null && pawn.Faction.IsPlayerSafe()))
+                                Command_Toggle sdMelee = new Command_Toggle();
+                                sdMelee.defaultLabel = "CombatAI.Gizmos.SearchDestroy.Melee".Translate();
+                                sdMelee.defaultDesc  = "CombatAI.Gizmos.SearchDestroy.Melee.Desc".Translate();
+                                sdMelee.icon         = TexCommand.AttackMelee;
+                                sdMelee.groupable    = false;
+                                sdMelee.isActive = () =>
                                 {
-                                    ThingComp_CombatAI comp = pawn.AI();
-                                    if (comp != null && comp.IsAIAutoControlled)
+                                    foreach (Pawn pawn in Find.Selector.SelectedPawns)
                                     {
-                                        comp.aiSearchAndDestroy = newSDVal;
+                                        if (!(pawn.IsColonist || (pawn.RaceProps.IsMechanoid && pawn.Faction != null && pawn.Faction.IsPlayerSafe())) || !pawn.Drafted) continue;
+                                        if (!(pawn.equipment?.Primary == null || pawn.equipment.Primary.def.IsMeleeWeapon)) continue;
+                                        ThingComp_CombatAI comp = pawn.AI();
+                                        if (comp != null && comp.aiSearchAndDestroyMelee) return true;
                                     }
-                                }
+                                    return false;
+                                };
+                                sdMelee.toggleAction = () =>
+                                {
+                                    bool anyOn = false;
+                                    foreach (Pawn pawn in Find.Selector.SelectedPawns)
+                                    {
+                                        if (!(pawn.IsColonist || (pawn.RaceProps.IsMechanoid && pawn.Faction != null && pawn.Faction.IsPlayerSafe())) || !pawn.Drafted) continue;
+                                        if (!(pawn.equipment?.Primary == null || pawn.equipment.Primary.def.IsMeleeWeapon)) continue;
+                                        ThingComp_CombatAI comp = pawn.AI();
+                                        if (comp != null && comp.aiSearchAndDestroyMelee) { anyOn = true; break; }
+                                    }
+                                    bool newVal = !anyOn;
+                                    foreach (Pawn pawn in Find.Selector.SelectedPawns)
+                                    {
+                                        if (!(pawn.IsColonist || (pawn.RaceProps.IsMechanoid && pawn.Faction != null && pawn.Faction.IsPlayerSafe()))) continue;
+                                        if (!(pawn.equipment?.Primary == null || pawn.equipment.Primary.def.IsMeleeWeapon)) continue;
+                                        ThingComp_CombatAI comp = pawn.AI();
+                                        if (comp != null && comp.IsAIAutoControlled) comp.aiSearchAndDestroyMelee = newVal;
+                                    }
+                                };
+                                yield return sdMelee;
                             }
-                        };
-                        yield return sdToggle;
+                        }
                     }
                 }
             }
@@ -2452,6 +2546,7 @@ namespace CombatAI.Comps
             Scribe_TargetInfo.Look(ref forcedTarget, "forcedTarget");
             Scribe_Values.Look(ref aiAutoControl, "aiAutoControl", false);
             Scribe_Values.Look(ref aiSearchAndDestroy, "aiSearchAndDestroy", false);
+            Scribe_Values.Look(ref aiSearchAndDestroyMelee, "aiSearchAndDestroyMelee", false);
             if (duties == null)
             {
                 duties = new Pawn_CustomDutyTracker(selPawn);
@@ -2647,6 +2742,10 @@ namespace CombatAI.Comps
         ///     When the pawn was last order to retreat by CAI.
         /// </summary>
         private int lastRetreated;
+        /// <summary>
+        ///     Last tick CAI interrupted a CE reload to seek cover.
+        /// </summary>
+        private int lastCEReloadCoverTick;
         /// <summary>
         ///     Last tick any enemies where reported in a scan.
         /// </summary>
