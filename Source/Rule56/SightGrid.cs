@@ -522,8 +522,6 @@ namespace CombatAI
 				MetaCombatAttribute attr = item.cachedDamage.attributes | availability;
 				grid.Next(pos, GetFlags(item), item.cachedDamage.adjustedSharp, item.cachedDamage.adjustedBlunt, attr);
 				grid_regions.Next();
-
-				if (destroyed) return;
 				var fogComp = map.GetComponent<MapComponent_FogGrid>();
 				Action<IntVec3, int, int, float> setAction = (cell, carry, dist, coverRating) =>
 				{
@@ -579,21 +577,13 @@ namespace CombatAI
 						}
 					}
 				};
-
-				try
+				if (item.CctvTop == null)
 				{
-					if (item.CctvTop == null)
-					{
-						ShadowCastingUtility.CastWeighted(map, pos, setAction, Maths.Max(sightRadius.scan, sightRadius.fog, sightRadius.sight), settings.carryLimit, buffer);
-					}
-					else
-					{
-						ShadowCastingUtility.CastWeighted(map, pos, item.CctvTop.LookDirection, setAction, Maths.Max(sightRadius.scan, sightRadius.fog, sightRadius.sight), item.CctvTop.BaseWidth, settings.carryLimit, buffer);
-					}
+					ShadowCastingUtility.CastWeighted(map, pos, setAction, Maths.Max(sightRadius.scan, sightRadius.fog, sightRadius.sight), settings.carryLimit, buffer);
 				}
-				catch (Exception) when (destroyed)
+				else
 				{
-					return;
+					ShadowCastingUtility.CastWeighted(map, pos, item.CctvTop.LookDirection, setAction, Maths.Max(sightRadius.scan, sightRadius.fog, sightRadius.sight), item.CctvTop.BaseWidth, settings.carryLimit, buffer);
 				}
 				grid.curRoot = IntVec3.Invalid;
 				flooder.Flood(origin, node =>

@@ -261,16 +261,12 @@ namespace CombatAI.Comps
             if (selPawn.Map == null) return false;
             float bestScore  = -1f;
             Thing bestTarget = null;
-            MapComponent_FogGrid fogComp_ff = (Finder.Settings.FogOfWar_Enabled && selPawn.Faction.IsPlayerSafe())
-                ? selPawn.Map?.GetComponent<MapComponent_FogGrid>()
-                : null;
             IEnumerator<AIEnvAgentInfo> enumerator = data.Enemies();
             while (enumerator.MoveNext())
             {
                 AIEnvAgentInfo info = enumerator.Current;
                 if (info.thing == null || !info.thing.Spawned) continue;
                 if ((sightReader.GetDynamicFriendlyFlags(info.thing.Position) & selFlags) == 0) continue;
-                if (fogComp_ff != null && fogComp_ff.IsFogged(info.thing.Position)) continue;
                 if (!verb.CanHitTarget(info.thing)) continue;
                 Pawn  ep      = info.thing as Pawn;
                 float hpScore = ep != null ? 1f - ep.health.summaryHealth.SummaryHealthPercent : 0f;
@@ -1009,11 +1005,6 @@ namespace CombatAI.Comps
             bool  bestEnemyVisibleNow  = false;
             bool  bestEnemyVisibleSoon = false;
             ulong selFlags             = selPawn.GetThingFlags();
-            // For player-side pawns under fog of war, resolve the fog grid so we can gate
-            // attacks on enemies whose positions haven't been revealed yet.
-            MapComponent_FogGrid fogComp_ranged = (Finder.Settings.FogOfWar_Enabled && selPawn.Faction.IsPlayerSafe())
-                ? selPawn.Map?.GetComponent<MapComponent_FogGrid>()
-                : null;
             // For debugging and logging.
             progress = 210;
             // A not fast check will check for retreat and for reactions to enemies that are visible or soon to be visible.
@@ -1035,8 +1026,7 @@ namespace CombatAI.Comps
                 if (info.thing.Spawned)
                 {
                     Pawn enemyPawn = info.thing as Pawn;
-                    if ((sightReader.GetDynamicFriendlyFlags(info.thing.Position) & selFlags) != 0 && verb.CanHitTarget(info.thing)
-                        && (fogComp_ranged == null || !fogComp_ranged.IsFogged(info.thing.Position)))
+                    if ((sightReader.GetDynamicFriendlyFlags(info.thing.Position) & selFlags) != 0 && verb.CanHitTarget(info.thing))
                     {
                         // For debugging and logging.
                         progress = 311;
@@ -1058,8 +1048,7 @@ namespace CombatAI.Comps
                         // For debugging and logging.
                         progress = 312;
                         IntVec3 temp = PawnPathUtility.GetMovingShiftedPosition(enemyPawn, 120);
-                        if ((sightReader.GetDynamicFriendlyFlags(temp) & selFlags) != 0 && verb.CanHitTarget(temp)
-                            && (fogComp_ranged == null || !fogComp_ranged.IsFogged(temp)))
+                        if ((sightReader.GetDynamicFriendlyFlags(temp) & selFlags) != 0 && verb.CanHitTarget(temp))
                         {
                             if (!bestEnemyVisibleSoon)
                             {
